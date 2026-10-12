@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BRP-Admin-Panel - Biotech Research Park</title>
+    <meta name="description" content="Comprehensive Web Admin Panel for Biotech Research Park managing investors, users, inquiries, facilities, compliance, opportunities, and publishing." />
+    <meta property="og:title" content="BRP-Admin-Panel - Biotech Research Park" />
+    <meta property="og:description" content="Comprehensive Web Admin Panel for Biotech Research Park managing investors, users, inquiries, facilities, compliance, opportunities, and publishing." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script>
+      (function() {
+        try {
+          var originalFetch = window.fetch;
+          var customFetch = originalFetch ? function() {
+            return originalFetch.apply(window, arguments);
+          } : undefined;
+
+          // Define setter and getter on window so extensions and proxies can reassign window.fetch without errors
+          Object.defineProperty(window, 'fetch', {
+            get: function() {
+              return customFetch;
+            },
+            set: function(val) {
+              customFetch = val;
+            },
+            configurable: true,
+            enumerable: true
+          });
+
+          if (typeof Window !== 'undefined' && Window.prototype) {
+            try {
+              var desc = Object.getOwnPropertyDescriptor(Window.prototype, 'fetch');
+              if (desc && !desc.set) {
+                Object.defineProperty(Window.prototype, 'fetch', {
+                  get: function() {
+                    return customFetch;
+                  },
+                  set: function(val) {
+                    customFetch = val;
+                  },
+                  configurable: true,
+                  enumerable: true
+                });
+              }
+            } catch (_) {}
+          }
+        } catch (e) {
+          console.warn('Fetch proxy initialization:', e);
+        }
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  </head>
+  <body class="bg-slate-50 text-slate-900 antialiased selection:bg-emerald-500/20 selection:text-emerald-900">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

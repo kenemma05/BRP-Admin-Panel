@@ -1,0 +1,6 @@
+{
+  "name": "BRP-Admin-Panel - Biotech Research Park",
+  "description": "Comprehensive Web Admin Panel for Biotech Research Park managing investors, users, inquiries, facilities, compliance, opportunities, and publishing.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

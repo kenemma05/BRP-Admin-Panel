@@ -1,0 +1,301 @@
+// BRP-Admin-Panel - Prisma Database Schema
+// Database models for Biotech Research Park Management System
+// Target: PostgreSQL
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  CONTENT_ADMIN
+  SUPPORT_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  PENDING_VERIFICATION
+  SUSPENDED
+  ARCHIVED
+}
+
+enum InquiryStatus {
+  NEW
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum PostStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  ARCHIVED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  IN_USE
+  COMPLETED
+  CANCELLED
+}
+
+enum ComplianceStatus {
+  COMPLIANT
+  UNDER_REVIEW
+  EXPIRING_SOON
+  NON_COMPLIANT
+}
+
+// 1. Admin Users & Staff
+model Admin {
+  id              String      @id @default(cuid())
+  email           String      @unique
+  passwordHash    String
+  fullName        String
+  role            AdminRole   @default(CONTENT_ADMIN)
+  avatarUrl       String?
+  department      String      @default("Operations")
+  lastLoginAt     DateTime?
+  isActive        Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  replies         InquiryReply[]
+  blogPosts       BlogPost[]
+  auditLogs       AuditLog[]
+
+  @@map("admins")
+}
+
+// 2. Park Registered Users (Tenants, Researchers, PIs)
+model User {
+  id              String       @id @default(cuid())
+  email           String       @unique
+  fullName        String
+  organization    String
+  title           String
+  field           String       // e.g., Genomics, Biopharma, Biochemistry
+  status          UserStatus   @default(ACTIVE)
+  phone           String?
+  labSuiteNumber  String?
+  avatarUrl       String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  bookings        EquipmentBooking[]
+  documents       DocumentResource[]
+
+  @@map("users")
+}
+
+// 3. Registered Investors
+model Investor {
+  id                String       @id @default(cuid())
+  email             String       @unique
+  contactName       String
+  firmName          String
+  type              String       // Venture Capital, Angel Syndicate, Sovereign Fund, Corporate VC
+  targetSectors     String[]     // ["Biopharma", "CRISPR/Gene Editing", "Diagnostics"]
+  preferredStages   String[]     // ["Seed", "Series A", "Series B"]
+  minCheckSizeUsd   Int
+  maxCheckSizeUsd   Int
+  portfolioCount    Int          @default(0)
+  status            UserStatus   @default(ACTIVE)
+  notes             String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@map("investors")
+}
+
+// 4. Registered Partners (Pharma alliances, CROs, Universities)
+model Partner {
+  id                String       @id @default(cuid())
+  organizationName  String
+  partnerType       String       // "CRO", "Big Pharma", "Academic Institution", "Tech Transfer"
+  primaryContact    String
+  email             String       @unique
+  phone             String?
+  collaborationType String       // "Co-development", "Incubation Sponsorship", "Core Lab Sharing"
+  status            UserStatus   @default(ACTIVE)
+  agreementExpiry   DateTime?
+  mouDocumentUrl    String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@map("partners")
+}
+
+// 5. Inquiries & Correspondence
+model Inquiry {
+  id                String         @id @default(cuid())
+  ticketNumber      String         @unique // e.g., "BRP-INQ-2026-081"
+  senderName        String
+  senderEmail       String
+  company           String?
+  category          String         // "Lab Space Lease", "Equipment Booking", "Investor Connect", "Partnership"
+  subject           String
+  message           String
+  status            InquiryStatus  @default(NEW)
+  priority          String         @default("Normal") // Low, Normal, High, Urgent
+  assignedAdminId   String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  replies           InquiryReply[]
+
+  @@map("inquiries")
+}
+
+model InquiryReply {
+  id                String      @id @default(cuid())
+  inquiryId         String
+  adminId           String
+  content           String
+  attachments       String[]    // List of uploaded file URLs
+  sentViaEmail      Boolean     @default(true)
+  createdAt         DateTime    @default(now())
+
+  inquiry           Inquiry     @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  admin             Admin       @relation(fields: [adminId], references: [id])
+
+  @@map("inquiry_replies")
+}
+
+// 6. Blog Posts & Content Management
+model BlogPost {
+  id                String      @id @default(cuid())
+  slug              String      @unique
+  title             String
+  excerpt           String
+  contentHtml       String      @db.Text
+  category          String      // "Biotech News", "Research Updates", "Industry Insights", "Park Updates"
+  tags              String[]
+  coverImageUrl     String?
+  authorId          String
+  status            PostStatus  @default(DRAFT)
+  publishedAt       DateTime?
+  scheduledFor      DateTime?
+  seoTitle          String?
+  seoDescription    String?
+  viewsCount        Int         @default(0)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  author            Admin       @relation(fields: [authorId], references: [id])
+
+  @@map("blog_posts")
+}
+
+// 7. Events & Conferences
+model Event {
+  id                String      @id @default(cuid())
+  title             String
+  description       String
+  location          String      // "Auditorium Alpha", "Virtual", "Bio-Innovation Commons"
+  startDate         DateTime
+  endDate           DateTime
+  capacity          Int
+  registeredCount   Int         @default(0)
+  category          String      // "Scientific Symposium", "Investor Pitch", "Safety Workshop"
+  coverImageUrl     String?
+  isPublic          Boolean     @default(true)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@map("events")
+}
+
+// 8. Facilities & Equipment Management
+model FacilitySpace {
+  id                String      @id @default(cuid())
+  name              String      // "Lab Suite 402 - BSL-2"
+  building          String      // "Building C - Pasteur Center"
+  floor             Int
+  squareFootage     Int
+  containmentLevel  String      // "BSL-1", "BSL-2", "BSL-3", "ISO 7 Cleanroom"
+  monthlyRateUsd    Float
+  isOccupied        Boolean     @default(false)
+  currentTenant     String?
+  leaseEndDate      DateTime?
+  amenities         String[]
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@map("facility_spaces")
+}
+
+model EquipmentBooking {
+  id                String         @id @default(cuid())
+  equipmentName     String         // "Illumina NovaSeq X Plus", "Cryo-TEM 300kV"
+  facilityLocation  String
+  userId            String
+  startTime         DateTime
+  endTime           DateTime
+  status            BookingStatus  @default(PENDING)
+  totalCostUsd      Float
+  sampleDescription String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  user              User           @relation(fields: [userId], references: [id])
+
+  @@map("equipment_bookings")
+}
+
+// 9. Documents & Compliance
+model DocumentResource {
+  id                String      @id @default(cuid())
+  title             String
+  fileName          String
+  fileSizeKb        Int
+  category          String      // "Biosafety Protocols", "Research Papers", "Brochures", "Legal & Compliance"
+  fileUrl           String
+  uploadedByUserId  String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  uploadedBy        User?       @relation(fields: [uploadedByUserId], references: [id])
+
+  @@map("document_resources")
+}
+
+model ComplianceRecord {
+  id                String            @id @default(cuid())
+  protocolNumber    String            @unique // e.g., "IBC-2026-4401"
+  entityName        String            // Tenant company or Lab PI
+  type              String            // "IBC Biohazard Protocol", "Radiation Safety", "Hazardous Waste EPA"
+  containmentLevel  String            // "BSL-2", "BSL-3"
+  status            ComplianceStatus  @default(COMPLIANT)
+  lastInspection    DateTime
+  nextAuditDate     DateTime
+  inspectorNotes    String?
+  certificateUrl    String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@map("compliance_records")
+}
+
+// 10. Audit Logs
+model AuditLog {
+  id          String    @id @default(cuid())
+  adminId     String?
+  action      String    // "CREATE_POST", "REPLY_INQUIRY", "UPDATE_ROLE", "APPROVE_BOOKING"
+  resource    String    // "BlogPost", "Inquiry", "Facility", "User"
+  resourceId  String?
+  details     String
+  ipAddress   String    @default("127.0.0.1")
+  createdAt   DateTime  @default(now())
+
+  admin       Admin?    @relation(fields: [adminId], references: [id])
+
+  @@map("audit_logs")
+}
