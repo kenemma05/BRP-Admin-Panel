@@ -22,9 +22,12 @@ import {
   TrendingUp,
   X,
   Dna,
+  Clock,
+  Shield,
 } from 'lucide-react';
 import { useAdmin } from '../../context/AdminContext';
 import { ActiveNavTab } from '../../types';
+import { getRoleConfig } from '../../lib/internalStaffData';
 
 interface SubmenuItem {
   id: ActiveNavTab;
@@ -52,8 +55,14 @@ export const Sidebar: React.FC = () => {
     inquiries,
     equipmentBookings,
     currentAdmin,
+    currentEmployee,
+    activeInternalRole,
+    pendingInternalApprovalsCount,
+    activeClientUser,
+    isLoggedIn,
   } = useAdmin();
 
+  const currentRoleCfg = getRoleConfig(activeInternalRole || currentEmployee?.role || 'SYSTEM_ADMIN');
   const newInquiriesCount = inquiries.filter(i => i.status === 'NEW').length;
   const pendingEquipmentCount = equipmentBookings.filter(e => e.status === 'PENDING').length;
 
@@ -78,9 +87,28 @@ export const Sidebar: React.FC = () => {
 
   const menuItems: MenuItem[] = [
     {
-      id: 'dashboard',
-      label: 'Dashboard',
+      id: 'role_dashboard',
+      label: `${currentRoleCfg.title} Dashboard`,
       icon: LayoutDashboard,
+      defaultTab: 'role_dashboard',
+    },
+    {
+      id: 'pending_approvals',
+      label: 'Pending Approvals Queue',
+      icon: Clock,
+      badge: pendingInternalApprovalsCount > 0 ? pendingInternalApprovalsCount : undefined,
+      defaultTab: 'pending_approvals',
+    },
+    {
+      id: 'staff_management',
+      label: 'Staff & RBAC Directory',
+      icon: Shield,
+      defaultTab: 'staff_management',
+    },
+    {
+      id: 'dashboard',
+      label: 'Park Executive Overview',
+      icon: TrendingUp,
       defaultTab: 'dashboard',
     },
     {
@@ -158,6 +186,12 @@ export const Sidebar: React.FC = () => {
     },
   ];
 
+  const isClientSession = Boolean(activeClientUser) && !isLoggedIn;
+
+  const visibleMenuItems = isClientSession
+    ? menuItems.filter(item => !['role_dashboard', 'pending_approvals', 'staff_management', 'dashboard', 'compliance', 'settings'].includes(item.id))
+    : menuItems;
+
   const handleNavClick = (item: MenuItem) => {
     if (sidebarCollapsed) {
       if (item.defaultTab) {
@@ -213,7 +247,7 @@ export const Sidebar: React.FC = () => {
             {!sidebarCollapsed && (
               <div className="flex flex-col min-w-0">
                 <span className="font-bold text-sm text-slate-100 tracking-tight leading-tight truncate">
-                  BRP Admin
+                  {isClientSession ? 'Client Portal' : 'BRP Admin'}
                 </span>
                 <span className="text-[10px] text-emerald-400 font-mono tracking-wider truncate">
                   Biotech Research Park
@@ -233,7 +267,7 @@ export const Sidebar: React.FC = () => {
 
         {/* Middle: Navigation Scroll Container */}
         <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1.5">
-          {menuItems.map((item) => {
+          {visibleMenuItems.map((item) => {
             const active = isItemActive(item);
             const isExpanded = expandedGroups[item.id];
             const Icon = item.icon;
@@ -307,7 +341,7 @@ export const Sidebar: React.FC = () => {
           })}
         </div>
 
-        {/* Bottom: Collapse Button & Admin Role Status */}
+        {/* Bottom: Collapse Button & Status Indicator */}
         <div className="p-3 border-t border-slate-800 shrink-0">
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -326,10 +360,10 @@ export const Sidebar: React.FC = () => {
 
           {!sidebarCollapsed && (
             <div className="mt-2 pt-2 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-500">
-              <span className="font-mono">v2.4 · REST API</span>
-              <span className="flex items-center gap-1 text-emerald-400 font-mono">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                Nominal
+              <span className="font-mono">BRP Admin v3.0</span>
+              <span className="flex items-center gap-1 text-emerald-400 font-mono text-[10px]">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                RBAC Active
               </span>
             </div>
           )}

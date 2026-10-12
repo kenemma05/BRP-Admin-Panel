@@ -46,7 +46,8 @@ import {
 import { useAdmin } from '../../context/AdminContext';
 import { useDashboardKPIs } from '../../hooks/useDashboardKPIs';
 import { useNeonStats } from '../../hooks/useNeonStats';
-import { USER_CATEGORIES, UserCategory } from '../../types';
+import { USER_CATEGORIES, UserCategory, InternalRole, InternalRoleConfig } from '../../types';
+import { INTERNAL_ROLES, getRoleConfig } from '../../lib/internalStaffData';
 
 export const DashboardView: React.FC = () => {
   const {
@@ -56,6 +57,11 @@ export const DashboardView: React.FC = () => {
     refreshNeonUsers,
     setActiveClientCategory,
     addToast,
+    activeInternalRole,
+    switchActiveInternalRole,
+    currentEmployee,
+    isLoggedIn,
+    activeClientUser,
   } = useAdmin();
 
   // Custom Neon KPI telemetry hook
@@ -398,6 +404,55 @@ export const DashboardView: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {/* Internal Role Switch Feature for Administrative Users */}
+        {isLoggedIn && !activeClientUser && (
+          <div className="mt-4 pt-3.5 border-t border-slate-700/60 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-900/70 p-3 rounded-xl border border-slate-700/80">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center font-bold text-xs shrink-0">
+                <Sparkles className="w-4 h-4 text-emerald-400" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-white">
+                    Role Switch Console
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 font-mono">
+                    Super Admin Access
+                  </span>
+                </div>
+                <span className="text-[11px] text-slate-400 block">
+                  Switch between Super Admin, Staff, and all 12 Administrative Dashboard perspectives
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
+                <span className="hidden sm:inline">Role Perspective:</span>
+              </div>
+              <select
+                value={activeInternalRole || 'SYSTEM_ADMIN'}
+                onChange={(e) => switchActiveInternalRole(e.target.value as InternalRole)}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-xs font-semibold text-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500 transition"
+                aria-label="Switch dashboard role"
+              >
+                {INTERNAL_ROLES.map((r: InternalRoleConfig) => (
+                  <option key={r.role} value={r.role}>
+                    {r.title} ({r.badge})
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={() => setActiveTab('role_dashboard')}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1 shadow-xs"
+              >
+                <span>Open {getRoleConfig(activeInternalRole || 'SYSTEM_ADMIN').title}</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* KPI Cards Grid (populated with useNeonStats real-time counts) */}

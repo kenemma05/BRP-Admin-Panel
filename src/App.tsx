@@ -19,6 +19,10 @@ import { AnalyticsView } from './components/analytics/AnalyticsView';
 import { SettingsView } from './components/settings/SettingsView';
 import { AccountInfoView } from './components/profile/AccountInfoView';
 import { ProfileModal } from './components/profile/ProfileModal';
+import { RoleDashboardRouter } from './components/dashboards/RoleDashboardRouter';
+import { PendingApprovalsView } from './components/users/PendingApprovalsView';
+import { InternalStaffView } from './components/users/InternalStaffView';
+import { ComplianceAuditLogs } from './components/compliance/ComplianceAuditLogs';
 import { UserCategory, NeonUser, USER_CATEGORIES } from './types';
 
 const MainAppLayout: React.FC = () => {
@@ -94,6 +98,14 @@ const MainAppLayout: React.FC = () => {
             }}
           />
         );
+      case 'role_dashboard':
+        return <RoleDashboardRouter />;
+      case 'pending_approvals':
+        return <PendingApprovalsView />;
+      case 'staff_management':
+        return <InternalStaffView />;
+      case 'audit_trail':
+        return <ComplianceAuditLogs />;
       case 'dashboard':
         return <DashboardView />;
       case 'users':

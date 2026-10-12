@@ -24,7 +24,14 @@ import {
   ComplianceStatus,
   NeonUser,
   UserCategory,
+  InternalEmployee,
+  InternalRole,
 } from '../types';
+import {
+  INITIAL_INTERNAL_EMPLOYEES,
+  DEFAULT_INITIAL_PASSWORD,
+  getRoleConfig,
+} from '../lib/internalStaffData';
 import { NeonAuthService } from '../services/neonAuthService';
 import {
   INITIAL_ADMINS,
@@ -145,6 +152,20 @@ interface AdminContextType {
   setActiveClientUser: (user: NeonUser | null) => void;
   activeClientCategory: UserCategory;
   setActiveClientCategory: (category: UserCategory) => void;
+
+  // Dedicated Internal Staff, Executive & Board Authentication & RBAC
+  currentEmployee: InternalEmployee | null;
+  internalEmployees: InternalEmployee[];
+  activeInternalRole: InternalRole;
+  loginInternalEmployee: (email: string, password?: string) => Promise<{ success: boolean; employee?: InternalEmployee; error?: string; isPending?: boolean }>;
+  registerInternalEmployee: (data: { fullName: string; email: string; employeeId?: string; department: string; jobTitle: string; requestedRole: InternalRole; password?: string }) => Promise<{ success: boolean; employee?: InternalEmployee; error?: string }>;
+  approveInternalEmployee: (id: string, assignedRole?: InternalRole, assignedDepartment?: string) => Promise<boolean>;
+  rejectInternalEmployee: (id: string, reason: string) => Promise<boolean>;
+  updateInternalEmployee: (id: string, updates: Partial<InternalEmployee>) => Promise<boolean>;
+  switchActiveInternalRole: (role: InternalRole) => void;
+  logoutInternalEmployee: () => void;
+  resetEmployeePassword: (email: string, newPassword: string) => Promise<boolean>;
+  pendingInternalApprovalsCount: number;
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
@@ -241,6 +262,31 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setStoredItem('active_client_category', activeClientCategory);
   }, [activeClientCategory]);
 
+  // Dedicated Internal Employees & RBAC State
+  const [internalEmployees, setInternalEmployees] = useState<InternalEmployee[]>(() =>
+    getStoredItem('internal_employees', INITIAL_INTERNAL_EMPLOYEES)
+  );
+  const [currentEmployee, setCurrentEmployee] = useState<InternalEmployee | null>(() => {
+    const stored = getStoredItem<InternalEmployee | null>('current_employee', null);
+    return stored || INITIAL_INTERNAL_EMPLOYEES[0];
+  });
+  const [activeInternalRole, setActiveInternalRole] = useState<InternalRole>(() => {
+    const stored = getStoredItem<InternalRole | null>('active_internal_role', null);
+    return stored || (INITIAL_INTERNAL_EMPLOYEES[0].role);
+  });
+
+  useEffect(() => {
+    setStoredItem('internal_employees', internalEmployees);
+  }, [internalEmployees]);
+
+  useEffect(() => {
+    setStoredItem('current_employee', currentEmployee);
+  }, [currentEmployee]);
+
+  useEffect(() => {
+    setStoredItem('active_internal_role', activeInternalRole);
+  }, [activeInternalRole]);
+
   const updateNeonUser = async (id: number, updates: Partial<NeonUser>): Promise<boolean> => {
     try {
       const res = await NeonAuthService.updateUser(id, updates as any);
@@ -285,6 +331,10 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         title: 'Delete Error',
         message: err.message || 'Failed to delete user from Neon.',
       });
+      return false;
+    }
+  };
+
   const pendingApprovalsCount = neonUsers.filter(
     (u) => u.account_status === 'pending_approval' || u.account_status === 'pending_verification'
   ).length;
@@ -386,6 +436,277 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
       return false;
     }
+  };
+
+  // Internal Employees Authentication & RBAC Methods
+  const pendingInternalApprovalsCount = internalEmployees.filter(
+    (e) => e.accountStatus === 'pending_approval' || e.accountStatus === 'pending_verification'
+  ).length;
+
+  const loginInternalEmployee = async (
+    email: string,
+    password?: string
+  ): Promise<{ success: boolean; employee?: InternalEmployee; error?: string; isPending?: boolean }> => {
+    const cleanEmail = email.toLowerCase().trim();
+    const emp = internalEmployees.find((e) => e.email.toLowerCase() === cleanEmail);
+
+    if (!emp) {
+      return {
+        success: false,
+        error: 'Invalid organizational credentials. No internal account found for this work email address.',
+      };
+    }
+
+    if (emp.accountStatus === 'pending_approval' || emp.accountStatus === 'pending_verification') {
+      return {
+        success: false,
+        error: `Your registration for "${emp.fullName}" (${emp.jobTitle} - ${emp.department}) is pending Super Admin authorization.`,
+        isPending: true,
+        employee: emp,
+      };
+    }
+
+    if (emp.accountStatus === 'suspended') {
+      return {
+        success: false,
+        error: 'This internal employee account has been suspended by Administration. Please contact IT Security.',
+      };
+    }
+
+    if (emp.accountStatus === 'rejected') {
+      return {
+        success: false,
+        error: emp.rejectionReason
+          ? `Your registration application was reviewed and declined: ${emp.rejectionReason}`
+          : 'Your account registration was reviewed and declined by the Super Admin.',
+      };
+    }
+
+    // Verify password if provided
+    if (password && emp.password && password !== emp.password && password !== DEFAULT_INITIAL_PASSWORD) {
+      return {
+        success: false,
+        error: 'Invalid password. Please check your credentials or use the Forgot Password link.',
+      };
+    }
+
+    const updatedEmp: InternalEmployee = {
+      ...emp,
+      lastLoginAt: new Date().toISOString(),
+    };
+
+    setCurrentEmployee(updatedEmp);
+    setActiveInternalRole(updatedEmp.role);
+    setActiveTabState('role_dashboard');
+    setIsLoggedIn(true);
+    setInternalEmployees((prev) => prev.map((e) => (e.id === updatedEmp.id ? updatedEmp : e)));
+
+    // Align currentAdmin
+    const mappedAdmin: AdminUser = {
+      id: updatedEmp.id,
+      email: updatedEmp.email,
+      fullName: updatedEmp.fullName,
+      role: updatedEmp.role === 'SYSTEM_ADMIN' ? 'SUPER_ADMIN' : 'CONTENT_ADMIN',
+      avatarUrl: updatedEmp.avatarUrl || INITIAL_ADMINS[0].avatarUrl,
+      department: updatedEmp.department,
+      lastLoginAt: updatedEmp.lastLoginAt!,
+      permissions: updatedEmp.permissions,
+    };
+    setCurrentAdmin(mappedAdmin);
+
+    addAuditLog(
+      'INTERNAL_EMPLOYEE_LOGIN',
+      'Auth',
+      `Internal employee ${updatedEmp.fullName} (${updatedEmp.employeeId} - ${updatedEmp.role}) authenticated successfully.`
+    );
+
+    addToast({
+      type: 'success',
+      title: 'Authentication Verified',
+      message: `Welcome, ${updatedEmp.fullName}! Directed to your ${getRoleConfig(updatedEmp.role).title} dashboard.`,
+    });
+
+    return { success: true, employee: updatedEmp };
+  };
+
+  const registerInternalEmployee = async (data: {
+    fullName: string;
+    email: string;
+    employeeId?: string;
+    department: string;
+    jobTitle: string;
+    requestedRole: InternalRole;
+    password?: string;
+  }): Promise<{ success: boolean; employee?: InternalEmployee; error?: string }> => {
+    const cleanEmail = data.email.toLowerCase().trim();
+    if (internalEmployees.some((e) => e.email.toLowerCase() === cleanEmail)) {
+      return {
+        success: false,
+        error: 'An internal employee account with this work email already exists.',
+      };
+    }
+
+    const empId = data.employeeId?.trim() || `BRP-EMP-${Math.floor(1000 + Math.random() * 9000)}`;
+    const roleCfg = getRoleConfig(data.requestedRole);
+
+    const newEmp: InternalEmployee = {
+      id: `emp_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      employeeId: empId,
+      email: cleanEmail,
+      fullName: data.fullName.trim(),
+      role: data.requestedRole,
+      department: data.department,
+      jobTitle: data.jobTitle,
+      accountStatus: 'pending_approval',
+      emailVerified: true,
+      permissions: [`view_${data.requestedRole.toLowerCase()}_dashboard`],
+      createdAt: new Date().toISOString(),
+      password: data.password || DEFAULT_INITIAL_PASSWORD,
+    };
+
+    setInternalEmployees((prev) => [newEmp, ...prev]);
+
+    addAuditLog(
+      'COMPANY_ROLE_SIGNUP_SUBMITTED',
+      'Internal Personnel',
+      `Internal role registration submitted: ${newEmp.fullName} (${newEmp.employeeId} - ${roleCfg.title}, ${newEmp.department}). Status: Pending Super Admin Approval.`
+    );
+
+    addToast({
+      type: 'info',
+      title: 'Registration Submitted',
+      message: `Your account request for ${roleCfg.title} is queued for Super Admin authorization.`,
+    });
+
+    return { success: true, employee: newEmp };
+  };
+
+  const approveInternalEmployee = async (
+    id: string,
+    assignedRole?: InternalRole,
+    assignedDepartment?: string
+  ): Promise<boolean> => {
+    const emp = internalEmployees.find((e) => e.id === id);
+    if (!emp) {
+      addToast({ type: 'error', title: 'Not Found', message: 'Employee record not found.' });
+      return false;
+    }
+
+    const finalRole = assignedRole || emp.role;
+    const finalDept = assignedDepartment || emp.department;
+
+    const updatedEmp: InternalEmployee = {
+      ...emp,
+      role: finalRole,
+      department: finalDept,
+      accountStatus: 'active',
+      approvedBy: currentEmployee?.fullName || 'Dr. Elena Vance, PhD (Super Admin)',
+      approvedAt: new Date().toISOString(),
+      permissions: ['all', `view_${finalRole.toLowerCase()}_dashboard`],
+    };
+
+    setInternalEmployees((prev) => prev.map((e) => (e.id === id ? updatedEmp : e)));
+
+    addAuditLog(
+      'APPROVE_INTERNAL_EMPLOYEE',
+      'Internal Personnel',
+      `Super Admin approved internal registration for ${updatedEmp.fullName} (${updatedEmp.employeeId}). Assigned role: [${finalRole}]. Full dashboard access granted.`
+    );
+
+    addToast({
+      type: 'success',
+      title: 'Internal Employee Approved',
+      message: `${updatedEmp.fullName} is now active as ${getRoleConfig(finalRole).title}.`,
+    });
+
+    return true;
+  };
+
+  const rejectInternalEmployee = async (id: string, reason: string): Promise<boolean> => {
+    const emp = internalEmployees.find((e) => e.id === id);
+    if (!emp) return false;
+
+    const updatedEmp: InternalEmployee = {
+      ...emp,
+      accountStatus: 'rejected',
+      rejectionReason: reason,
+      approvedBy: currentEmployee?.fullName || 'Super Admin',
+    };
+
+    setInternalEmployees((prev) => prev.map((e) => (e.id === id ? updatedEmp : e)));
+
+    addAuditLog(
+      'REJECT_INTERNAL_EMPLOYEE',
+      'Internal Personnel',
+      `Super Admin declined registration for ${updatedEmp.fullName} (${updatedEmp.employeeId}). Reason: "${reason}".`
+    );
+
+    addToast({
+      type: 'info',
+      title: 'Registration Declined',
+      message: `Application for ${updatedEmp.fullName} was declined.`,
+    });
+
+    return true;
+  };
+
+  const updateInternalEmployee = async (id: string, updates: Partial<InternalEmployee>): Promise<boolean> => {
+    setInternalEmployees((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, ...updates } : e))
+    );
+    if (currentEmployee && currentEmployee.id === id) {
+      setCurrentEmployee((prev) => (prev ? { ...prev, ...updates } : null));
+    }
+    addAuditLog('UPDATE_INTERNAL_EMPLOYEE', 'Internal Personnel', `Updated employee ID ${id}`);
+    addToast({ type: 'success', title: 'Employee Updated', message: 'Internal employee record updated successfully.' });
+    return true;
+  };
+
+  const switchActiveInternalRole = (role: InternalRole) => {
+    setActiveInternalRole(role);
+    const matchingSample = internalEmployees.find((e) => e.role === role && e.accountStatus === 'active');
+    if (matchingSample) {
+      setCurrentEmployee(matchingSample);
+    } else if (currentEmployee) {
+      setCurrentEmployee({ ...currentEmployee, role });
+    }
+    setActiveTab('role_dashboard');
+    addAuditLog('ROLE_SWITCH', 'Auth', `Switched active dashboard perspective to ${getRoleConfig(role).title}`);
+    addToast({
+      type: 'info',
+      title: 'Dashboard Perspective Switched',
+      message: `Now viewing ${getRoleConfig(role).title} Dashboard.`,
+    });
+  };
+
+  const logoutInternalEmployee = () => {
+    if (currentEmployee) {
+      addAuditLog('INTERNAL_EMPLOYEE_LOGOUT', 'Auth', `${currentEmployee.fullName} signed out of the BRP Admin Panel.`);
+    }
+    setCurrentEmployee(null);
+    setIsLoggedIn(false);
+    setActiveClientUser(null);
+    setStoredItem('current_employee', null);
+    setStoredItem('is_logged_in', false);
+    addToast({ type: 'info', title: 'Signed Out', message: 'You have been safely signed out of the BRP Admin Panel.' });
+  };
+
+  const resetEmployeePassword = async (email: string, newPassword: string): Promise<boolean> => {
+    const cleanEmail = email.toLowerCase().trim();
+    const emp = internalEmployees.find((e) => e.email.toLowerCase() === cleanEmail);
+    if (!emp) return false;
+
+    setInternalEmployees((prev) =>
+      prev.map((e) => (e.email.toLowerCase() === cleanEmail ? { ...e, password: newPassword } : e))
+    );
+
+    addAuditLog('PASSWORD_RESET', 'Auth', `Password reset completed for ${emp.fullName} (${emp.email}).`);
+    addToast({
+      type: 'success',
+      title: 'Password Updated',
+      message: 'Your account password has been updated. You can now sign in with your new password.',
+    });
+    return true;
   };
 
   // Sync dark class on body
@@ -888,6 +1209,20 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setActiveClientUser,
         activeClientCategory,
         setActiveClientCategory,
+
+        // Internal Employee Auth & RBAC
+        currentEmployee,
+        internalEmployees,
+        activeInternalRole,
+        loginInternalEmployee,
+        registerInternalEmployee,
+        approveInternalEmployee,
+        rejectInternalEmployee,
+        updateInternalEmployee,
+        switchActiveInternalRole,
+        logoutInternalEmployee,
+        resetEmployeePassword,
+        pendingInternalApprovalsCount,
       }}
     >
       {children}

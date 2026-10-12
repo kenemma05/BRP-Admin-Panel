@@ -77,7 +77,7 @@ export const DedicatedClientPortal: React.FC<DedicatedClientPortalProps> = ({
   onOpenAdminPanel,
 }) => {
   const config = CATEGORY_PORTAL_CONFIGS[category] || CATEGORY_PORTAL_CONFIGS['Bio-Innovator / Strategic Partner'];
-  const { addToast } = useAdmin();
+  const { addToast, activeClientUser, isLoggedIn } = useAdmin();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'resources' | 'account'>('overview');
   const [resources, setResources] = useState<PortalResource[]>([]);
@@ -253,7 +253,7 @@ export const DedicatedClientPortal: React.FC<DedicatedClientPortalProps> = ({
               </select>
             </div>
 
-            {onOpenAdminPanel && (
+            {onOpenAdminPanel && isLoggedIn && !currentUser && !activeClientUser && (
               <button
                 type="button"
                 onClick={onOpenAdminPanel}
