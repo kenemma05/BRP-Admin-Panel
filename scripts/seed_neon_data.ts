@@ -1,6 +1,10 @@
 import { neon } from '@neondatabase/serverless';
 
-const connectionString = 'postgresql://neondb_owner:npg_PqJybnf13pmk@ep-red-pine-zahug5af-pooler.c-2.eu-west-2.aws.neon.tech/neondb?sslmode=require';
+const connectionString = process.env.DATABASE_URL?.trim() || '';
+if (!connectionString) {
+  console.warn('No DATABASE_URL provided. Exiting seed script.');
+  process.exit(0);
+}
 const sql = neon(connectionString);
 
 async function main() {

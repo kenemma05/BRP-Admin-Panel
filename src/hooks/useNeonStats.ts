@@ -47,7 +47,7 @@ export interface NeonStatsState {
   isLoading: boolean;
   isLive: boolean;
   error: string | null;
-  lastUpdated: Date | null;
+  lastUpdated: string | null;
 }
 
 /**
@@ -94,7 +94,8 @@ export function useNeonStats(pollIntervalMs = 15000) {
       setStats((prev) => ({
         ...prev,
         isLoading: false,
-        error: 'Neon PostgreSQL client not available',
+        isLive: false,
+        error: null,
       }));
       return;
     }
@@ -193,13 +194,13 @@ export function useNeonStats(pollIntervalMs = 15000) {
               facilityName: b.facility_name,
               userName: b.user_name || 'N/A',
               organization: b.organization || 'Biotech Research Park',
-              startDate: b.start_date ? String(b.start_date) : '',
-              endDate: b.end_date ? String(b.end_date) : '',
+              startDate: b.start_date instanceof Date ? b.start_date.toISOString().split('T')[0] : b.start_date ? String(b.start_date) : '',
+              endDate: b.end_date instanceof Date ? b.end_date.toISOString().split('T')[0] : b.end_date ? String(b.end_date) : '',
               purpose: b.purpose || '',
               status: b.status || 'confirmed',
               hourlyRate: Number(b.hourly_rate) || 0,
               totalAmount: Number(b.total_amount) || 0,
-              createdAt: b.created_at ? String(b.created_at) : '',
+              createdAt: b.created_at instanceof Date ? b.created_at.toISOString() : b.created_at ? String(b.created_at) : '',
             });
           });
         }
@@ -260,7 +261,7 @@ export function useNeonStats(pollIntervalMs = 15000) {
         isLoading: false,
         isLive: true,
         error: null,
-        lastUpdated: new Date(),
+        lastUpdated: new Date().toLocaleTimeString(),
       });
     } catch (err: any) {
       console.error('Failed to fetch Neon stats:', err);
@@ -269,7 +270,7 @@ export function useNeonStats(pollIntervalMs = 15000) {
         isLoading: false,
         isLive: false,
         error: err.message || 'Failed to query Neon PostgreSQL',
-        lastUpdated: new Date(),
+        lastUpdated: new Date().toLocaleTimeString(),
       }));
     }
   }, []);

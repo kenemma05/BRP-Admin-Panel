@@ -172,7 +172,11 @@ export const CoDeveloperDashboard: React.FC<Props> = ({ currentUser }) => {
                   <td className="py-3 px-4 font-mono font-bold text-emerald-500">
                     {s.resolved_bugs} resolved
                   </td>
-                  <td className="py-3 px-4 text-slate-500 font-mono">{s.release_target_date}</td>
+                  <td className="py-3 px-4 text-slate-500 font-mono">
+                    {(s.release_target_date as any) instanceof Date
+                      ? (s.release_target_date as any).toLocaleDateString()
+                      : String(s.release_target_date)}
+                  </td>
                   <td className="py-3 px-4">
                     <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-[10px] border border-slate-300 dark:border-slate-700">
                       {s.status}

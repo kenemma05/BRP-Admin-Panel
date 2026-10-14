@@ -157,6 +157,9 @@ interface AdminContextType {
 
   // Neon Database Users & Synchronization
   neonUsers: NeonUser[];
+  registeredClients: NeonUser[];
+  refreshRegisteredClients: () => Promise<void>;
+  registeredClientsLoading: boolean;
   refreshNeonUsers: () => Promise<void>;
   updateNeonUser: (id: number, updates: Partial<NeonUser>) => Promise<boolean>;
   deleteNeonUser: (id: number) => Promise<boolean>;

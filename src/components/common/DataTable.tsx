@@ -224,7 +224,13 @@ export function DataTable<T extends Record<string, any>>({
                         col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'
                       }`}
                     >
-                      {col.render ? col.render(row, idx) : row[col.key]}
+                      {col.render
+                        ? col.render(row, idx)
+                        : row[col.key] instanceof Date
+                        ? (row[col.key] as Date).toLocaleDateString()
+                        : typeof row[col.key] === 'object' && row[col.key] !== null
+                        ? JSON.stringify(row[col.key])
+                        : row[col.key]}
                     </td>
                   ))}
                 </tr>

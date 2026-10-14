@@ -325,6 +325,7 @@ export type ActiveNavTab =
   | 'settings'
   | 'account'
   | 'portals'
+  | 'registered_clients'
   | 'public_publication';
 
 // ==========================================

@@ -1,10 +1,11 @@
 import { neon } from '@neondatabase/serverless';
 
-const rawUrl = process.env.DATABASE_URL?.trim();
-const connectionString = (rawUrl && rawUrl.startsWith('postgres'))
-  ? rawUrl
-  : 'postgresql://neondb_owner:npg_PqJybnf13pmk@ep-red-pine-zahug5af-pooler.c-2.eu-west-2.aws.neon.tech/neondb?sslmode=require';
-const sql = neon(connectionString);
+const rawUrl = process.env.DATABASE_URL?.trim() || '';
+if (!rawUrl) {
+  console.warn('No DATABASE_URL provided. Exiting seed script.');
+  process.exit(0);
+}
+const sql = neon(rawUrl);
 
 async function main() {
   console.log('--- Initializing Role-Based Dashboard Tables in Neon ---');

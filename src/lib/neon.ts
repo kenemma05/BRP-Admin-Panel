@@ -4,7 +4,7 @@ import { neon } from '@neondatabase/serverless';
 const configuredUrl =
   (typeof import.meta !== 'undefined' && import.meta.env?.VITE_DATABASE_URL?.trim()) ||
   (typeof process !== 'undefined' && process.env?.DATABASE_URL?.trim()) ||
-  "postgresql://neondb_owner:npg_PqJybnf13pmk@ep-red-pine-zahug5af-pooler.c-2.eu-west-2.aws.neon.tech/neondb?sslmode=require";
+  "";
 
 export const neonProjectConfig = {
   projectId: "steep-haze-58773380",

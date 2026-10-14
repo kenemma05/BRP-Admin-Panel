@@ -677,7 +677,11 @@ export const DedicatedClientPortal: React.FC<DedicatedClientPortalProps> = ({
                       <p className="text-[11px] text-slate-500 dark:text-slate-400">{task.notes}</p>
                     )}
                     <div className="flex items-center gap-3 text-[11px] text-slate-400">
-                      {task.due_date && <span>Due: {task.due_date}</span>}
+                      {task.due_date && (
+                        <span>
+                          Due: {(task.due_date as any) instanceof Date ? (task.due_date as any).toLocaleDateString() : String(task.due_date)}
+                        </span>
+                      )}
                       {task.assigned_to && <span>Assigned: {task.assigned_to}</span>}
                     </div>
                   </div>

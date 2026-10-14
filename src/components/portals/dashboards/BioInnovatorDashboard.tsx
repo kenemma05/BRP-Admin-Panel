@@ -447,7 +447,11 @@ export const BioInnovatorDashboard: React.FC<BioInnovatorDashboardProps> = ({ cu
                           <Calendar className="w-3 h-3 text-amber-500" />
                           £{Number(inv.payment_amount).toLocaleString()}
                         </div>
-                        <span className="text-[10px] text-slate-400">{inv.upcoming_payment_date}</span>
+                        <span className="text-[10px] text-slate-400">
+                          {(inv.upcoming_payment_date as any) instanceof Date
+                            ? (inv.upcoming_payment_date as any).toLocaleDateString()
+                            : String(inv.upcoming_payment_date)}
+                        </span>
                       </div>
                     ) : (
                       <span className="text-slate-400">N/A</span>

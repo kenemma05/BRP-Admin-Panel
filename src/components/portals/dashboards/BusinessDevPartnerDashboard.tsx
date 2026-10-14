@@ -214,7 +214,11 @@ export const BusinessDevPartnerDashboard: React.FC<Props> = ({ currentUser }) =>
                   <td className="py-3 px-4 font-mono font-semibold text-emerald-600 dark:text-emerald-400">
                     {d.probability_pct}%
                   </td>
-                  <td className="py-3 px-4 text-slate-500 font-mono">{d.projected_close_date}</td>
+                  <td className="py-3 px-4 text-slate-500 font-mono">
+                    {(d.projected_close_date as any) instanceof Date
+                      ? (d.projected_close_date as any).toLocaleDateString()
+                      : String(d.projected_close_date)}
+                  </td>
                   <td className="py-3 px-4 text-slate-700 dark:text-slate-300 font-medium">{d.term_sheet_status}</td>
                 </tr>
               ))}

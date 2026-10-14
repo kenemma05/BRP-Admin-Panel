@@ -13,6 +13,12 @@ import {
   UserCategory,
 } from '../types';
 
+function toCleanDateString(val: any): string {
+  if (!val) return '';
+  if (val instanceof Date) return val.toISOString().split('T')[0];
+  return String(val);
+}
+
 export class NeonRoleDashboardService {
   /**
    * Fetch role-specific KPIs from Neon
@@ -85,6 +91,8 @@ export class NeonRoleDashboardService {
             actual_return: Number(r.actual_return),
             roi_percentage: Number(r.roi_percentage),
             payment_amount: Number(r.payment_amount || 0),
+            investment_date: toCleanDateString(r.investment_date),
+            upcoming_payment_date: toCleanDateString(r.upcoming_payment_date),
           })) as PortalInvestmentRecord[];
         }
       } catch (err) {
@@ -200,6 +208,8 @@ export class NeonRoleDashboardService {
             current_enrollment: Number(r.current_enrollment),
             adverse_events_count: Number(r.adverse_events_count),
             completion_pct: Number(r.completion_pct),
+            start_date: toCleanDateString(r.start_date),
+            estimated_completion: toCleanDateString(r.estimated_completion),
           })) as PortalClinicalTrial[];
         }
       } catch (err) {
@@ -253,6 +263,8 @@ export class NeonRoleDashboardService {
             quantity: Number(r.quantity),
             purity_percentage: Number(r.purity_percentage),
             lead_time_days: Number(r.lead_time_days),
+            release_date: toCleanDateString(r.release_date),
+            expiry_date: toCleanDateString(r.expiry_date),
           })) as PortalSupplyBatch[];
         }
       } catch (err) {
@@ -298,6 +310,8 @@ export class NeonRoleDashboardService {
             total_budget: Number(r.total_budget),
             spent_budget: Number(r.spent_budget),
             publications_count: Number(r.publications_count),
+            grant_start: toCleanDateString(r.grant_start),
+            grant_end: toCleanDateString(r.grant_end),
           })) as PortalResearchGrant[];
         }
       } catch (err) {
@@ -323,6 +337,7 @@ export class NeonRoleDashboardService {
             ...r,
             estimated_value: Number(r.estimated_value),
             probability_pct: Number(r.probability_pct),
+            projected_close_date: toCleanDateString(r.projected_close_date),
           })) as PortalBusinessDeal[];
         }
       } catch (err) {
@@ -372,6 +387,9 @@ export class NeonRoleDashboardService {
             royalty_rate_pct: Number(r.royalty_rate_pct),
             total_royalties_collected: Number(r.total_royalties_collected),
             mta_count: Number(r.mta_count),
+            filing_date: toCleanDateString(r.filing_date),
+            grant_date: toCleanDateString(r.grant_date),
+            expiry_date: toCleanDateString(r.expiry_date),
           })) as PortalIPLicense[];
         }
       } catch (err) {
@@ -399,6 +417,9 @@ export class NeonRoleDashboardService {
             completed_story_points: Number(r.completed_story_points),
             open_bugs: Number(r.open_bugs),
             resolved_bugs: Number(r.resolved_bugs),
+            sprint_start: toCleanDateString(r.sprint_start),
+            sprint_end: toCleanDateString(r.sprint_end),
+            release_target_date: toCleanDateString(r.release_target_date),
           })) as PortalCodevSprint[];
         }
       } catch (err) {
@@ -424,6 +445,7 @@ export class NeonRoleDashboardService {
             ...r,
             total_ballots_cast: Number(r.total_ballots_cast),
             quorum_pct: Number(r.quorum_pct),
+            vote_deadline: toCleanDateString(r.vote_deadline),
           })) as PortalConsortiumInitiative[];
         }
       } catch (err) {

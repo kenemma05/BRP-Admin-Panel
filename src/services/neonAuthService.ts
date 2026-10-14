@@ -72,14 +72,57 @@ export class NeonAuthService {
           ORDER BY id DESC
         `;
         if (rows && rows.length > 0) {
-          saveLocalUsers(rows as NeonUser[]);
-          return rows as NeonUser[];
+          const sanitized = rows.map((u: any) => ({
+            ...u,
+            created_at: u.created_at instanceof Date ? u.created_at.toISOString() : u.created_at ? String(u.created_at) : new Date().toISOString(),
+            updated_at: u.updated_at instanceof Date ? u.updated_at.toISOString() : u.updated_at ? String(u.updated_at) : undefined,
+            approved_at: u.approved_at instanceof Date ? u.approved_at.toISOString() : u.approved_at ? String(u.approved_at) : undefined,
+            last_login_at: u.last_login_at instanceof Date ? u.last_login_at.toISOString() : u.last_login_at ? String(u.last_login_at) : undefined,
+          })) as NeonUser[];
+          saveLocalUsers(sanitized);
+          return sanitized;
         }
       } catch (err) {
         console.warn('Neon database query unavailable, using resilient fallback cache:', err);
       }
     }
     return getLocalUsers();
+  }
+
+  /**
+   * Fetches all registered component users (clients) from public.users table or local cache
+   */
+  static async getRegisteredClients(): Promise<NeonUser[]> {
+    if (sql) {
+      try {
+        const rows = await sql`
+          SELECT 
+            id, uid, email, full_name, username, organization, job_title, 
+            partner_type, portal_category, phone_number, address_line_1, 
+            address_line_2, city, state_province_region, zip_postal_code, 
+            country, email_verified, account_status, role, notes, 
+            last_login_at, created_at, updated_at,
+            approved_at, approved_by, rejection_reason
+          FROM public.users
+          WHERE role = 'CLIENT' OR portal_category IS NOT NULL OR partner_type IS NOT NULL
+          ORDER BY id DESC
+        `;
+        if (rows && rows.length > 0) {
+          const sanitized = rows.map((u: any) => ({
+            ...u,
+            created_at: u.created_at instanceof Date ? u.created_at.toISOString() : u.created_at ? String(u.created_at) : new Date().toISOString(),
+            updated_at: u.updated_at instanceof Date ? u.updated_at.toISOString() : u.updated_at ? String(u.updated_at) : undefined,
+            approved_at: u.approved_at instanceof Date ? u.approved_at.toISOString() : u.approved_at ? String(u.approved_at) : undefined,
+            last_login_at: u.last_login_at instanceof Date ? u.last_login_at.toISOString() : u.last_login_at ? String(u.last_login_at) : undefined,
+          })) as NeonUser[];
+          return sanitized;
+        }
+      } catch (err) {
+        console.warn('Neon database query for registered clients unavailable, using cache:', err);
+      }
+    }
+    const all = getLocalUsers();
+    return all.filter((u) => u.role === 'CLIENT' || u.portal_category || u.partner_type);
   }
 
   /**
@@ -522,7 +565,11 @@ export class NeonAuthService {
           `;
         }
         if (rows && rows.length > 0) {
-          return rows as PortalProjectTask[];
+          return rows.map((t: any) => ({
+            ...t,
+            due_date: t.due_date instanceof Date ? t.due_date.toISOString().split('T')[0] : t.due_date ? String(t.due_date) : undefined,
+            created_at: t.created_at instanceof Date ? t.created_at.toISOString() : t.created_at ? String(t.created_at) : undefined,
+          })) as PortalProjectTask[];
         }
       } catch (err) {
         console.warn('Failed to fetch portal tasks from Neon:', err);
@@ -651,7 +698,10 @@ export class NeonAuthService {
           LIMIT ${limit}
         `;
         if (rows && rows.length > 0) {
-          return rows as PortalActivityLog[];
+          return rows.map((l: any) => ({
+            ...l,
+            created_at: l.created_at instanceof Date ? l.created_at.toISOString() : l.created_at ? String(l.created_at) : new Date().toISOString(),
+          })) as PortalActivityLog[];
         }
       } catch (err) {
         console.warn('Failed to fetch activity logs from Neon:', err);
