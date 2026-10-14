@@ -57,6 +57,8 @@ export interface NeonUser {
   approved_at?: string | null;
   approved_by?: string | null;
   rejection_reason?: string | null;
+  avatarUrl?: string;
+  password?: string;
 }
 
 export interface PortalResource {
@@ -104,6 +106,8 @@ export interface AdminUser {
   lastLoginAt: string;
   bio?: string;
   permissions: string[];
+  phoneNumber?: string;
+  password?: string;
 }
 
 export interface ParkUser {
@@ -320,7 +324,8 @@ export type ActiveNavTab =
   | 'analytics'
   | 'settings'
   | 'account'
-  | 'portals';
+  | 'portals'
+  | 'public_publication';
 
 // ==========================================
 // Internal Staff, Executives & Board Roles

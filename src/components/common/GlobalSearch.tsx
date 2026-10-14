@@ -144,16 +144,16 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
       seenUserEmails.add(u.email.toLowerCase());
       if (
         !q ||
-        u.name.toLowerCase().includes(q) ||
+        u.fullName.toLowerCase().includes(q) ||
         u.email.toLowerCase().includes(q) ||
-        u.company.toLowerCase().includes(q) ||
-        u.category.toLowerCase().includes(q)
+        u.organization.toLowerCase().includes(q) ||
+        (u.field && u.field.toLowerCase().includes(q))
       ) {
         userMatches.push({
           id: `usr_${u.id}`,
           type: 'user',
-          title: u.name,
-          subtitle: `${u.company} · ${u.category}`,
+          title: u.fullName,
+          subtitle: `${u.organization} · ${u.field || u.title}`,
           badge: u.status,
           badgeColor: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20',
           metadata: u.email,

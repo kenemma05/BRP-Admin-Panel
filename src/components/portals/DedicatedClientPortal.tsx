@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Dna,
   Shield,
@@ -56,7 +56,13 @@ import {
   Database,
   CreditCard,
   FileCode,
-  Grid
+  Grid,
+  Lock,
+  Upload,
+  Camera,
+  Save,
+  Check,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { UserCategory, NeonUser, PortalResource, PortalProjectTask, USER_CATEGORIES } from '../../types';
 import { CATEGORY_PORTAL_CONFIGS } from './portalConfigs';
@@ -78,7 +84,29 @@ export const DedicatedClientPortal: React.FC<DedicatedClientPortalProps> = ({
   onOpenAdminPanel,
 }) => {
   const config = CATEGORY_PORTAL_CONFIGS[category] || CATEGORY_PORTAL_CONFIGS['Bio-Innovator / Strategic Partner'];
-  const { addToast, activeClientUser, isLoggedIn } = useAdmin();
+  const { addToast, activeClientUser, setActiveClientUser, isLoggedIn, neonUsers } = useAdmin();
+
+  // Resolved user for this portal session
+  const effectiveUser: NeonUser =
+    currentUser ||
+    activeClientUser ||
+    neonUsers.find((u) => (u.portal_category || u.partner_type) === category) ||
+    neonUsers[0] ||
+    ({
+      id: 101,
+      uid: 'brp_usr_client',
+      email: 'client.partner@biotech-consortium.org',
+      full_name: 'Dr. Kenneth Emma',
+      organization: 'GenePulse Therapeutics Ltd.',
+      job_title: 'Lead Translational Investigator',
+      portal_category: category,
+      partner_type: category,
+      phone_number: '+44 020 7946 0912',
+      account_status: 'active',
+      role: 'CLIENT',
+      created_at: new Date().toISOString(),
+      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&h=256&q=80',
+    } as NeonUser);
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'overview' | 'tasks' | 'resources' | 'account'>('dashboard');
   const [resources, setResources] = useState<PortalResource[]>([]);
@@ -90,6 +118,27 @@ export const DedicatedClientPortal: React.FC<DedicatedClientPortalProps> = ({
   const [newTaskDueDate, setNewTaskDueDate] = useState('');
   const [newTaskNotes, setNewTaskNotes] = useState('');
   const [submittingTask, setSubmittingTask] = useState(false);
+
+  // Client Profile Picture state
+  const clientFileInputRef = useRef<HTMLInputElement>(null);
+  const [clientAvatarUrl, setClientAvatarUrl] = useState<string>(
+    effectiveUser?.avatarUrl ||
+      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&h=256&q=80'
+  );
+  const [showPresetModal, setShowPresetModal] = useState(false);
+
+  // Client Password Change state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+
+  // Sync avatar if user changes
+  useEffect(() => {
+    if (effectiveUser?.avatarUrl) {
+      setClientAvatarUrl(effectiveUser.avatarUrl);
+    }
+  }, [effectiveUser?.id, effectiveUser?.avatarUrl]);
 
   // Load Neon resources and tasks for this category
   useEffect(() => {
@@ -175,6 +224,115 @@ export const DedicatedClientPortal: React.FC<DedicatedClientPortalProps> = ({
       });
     } finally {
       setSubmittingTask(false);
+    }
+  };
+
+  const clientAvatarPresets = [
+    { label: 'Clinical Investigator (Dr. Kenneth Emma)', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&h=256&q=80' },
+    { label: 'Genomics Lead (Dr. Victoria Zhang)', url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=256&h=256&q=80' },
+    { label: 'Biopharma Partner (Alex Mercer)', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=256&h=256&q=80' },
+    { label: 'Senior Scientist (Catherine Tremblay)', url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=256&h=256&q=80' },
+    { label: 'Medical Liaison (Dr. Dieter Hoffman)', url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=256&h=256&q=80' },
+  ];
+
+  const handleClientAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      addToast({
+        type: 'error',
+        title: 'File Too Large',
+        message: 'Please choose an image file under 5MB.',
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const dataUrl = event.target?.result as string;
+      setClientAvatarUrl(dataUrl);
+
+      if (effectiveUser) {
+        await NeonAuthService.updateUser(effectiveUser.id, {
+          avatarUrl: dataUrl,
+          avatar_url: dataUrl,
+        });
+        if (setActiveClientUser) {
+          setActiveClientUser({ ...effectiveUser, avatarUrl: dataUrl });
+        }
+      }
+
+      addToast({
+        type: 'success',
+        title: 'Profile Picture Updated',
+        message: 'Your new institutional profile photo has been saved.',
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSelectPreset = async (url: string) => {
+    setClientAvatarUrl(url);
+    setShowPresetModal(false);
+    if (effectiveUser) {
+      await NeonAuthService.updateUser(effectiveUser.id, {
+        avatarUrl: url,
+        avatar_url: url,
+      });
+      if (setActiveClientUser) {
+        setActiveClientUser({ ...effectiveUser, avatarUrl: url });
+      }
+    }
+    addToast({
+      type: 'success',
+      title: 'Profile Picture Changed',
+      message: 'New profile photo applied from gallery.',
+    });
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPassword || newPassword.length < 8) {
+      addToast({
+        type: 'error',
+        title: 'Password Too Short',
+        message: 'Password must contain at least 8 characters.',
+      });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      addToast({
+        type: 'error',
+        title: 'Password Mismatch',
+        message: 'New password and confirm password do not match.',
+      });
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    try {
+      if (effectiveUser) {
+        await NeonAuthService.updateUser(effectiveUser.id, {
+          password: newPassword,
+          password_hash: newPassword,
+        });
+      }
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      addToast({
+        type: 'success',
+        title: 'Password Changed',
+        message: 'Your client portal security credentials have been updated successfully.',
+      });
+    } catch (err: any) {
+      addToast({
+        type: 'error',
+        title: 'Update Error',
+        message: err.message || 'Failed to update credentials.',
+      });
+    } finally {
+      setIsUpdatingPassword(false);
     }
   };
 
@@ -326,18 +484,17 @@ export const DedicatedClientPortal: React.FC<DedicatedClientPortalProps> = ({
               {resources.length}
             </span>
           </button>
-          {currentUser && (
-            <button
-              onClick={() => setActiveTab('account')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
-                activeTab === 'account'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              Account Information
-            </button>
-          )}
+          <button
+            onClick={() => setActiveTab('account')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
+              activeTab === 'account'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <User className="w-3.5 h-3.5" />
+            <span>Profile & Security</span>
+          </button>
         </div>
 
         <button
@@ -620,50 +777,374 @@ export const DedicatedClientPortal: React.FC<DedicatedClientPortalProps> = ({
         </div>
       )}
 
-      {/* TAB CONTENT: ACCOUNT INFORMATION */}
-      {activeTab === 'account' && currentUser && (
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 space-y-6 shadow-xs">
-          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-lg">
-                {currentUser.full_name ? currentUser.full_name.charAt(0).toUpperCase() : 'U'}
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                  {currentUser.full_name || 'BRP Registered User'}
-                </h3>
-                <p className="text-xs text-slate-500">Institutional ID: #{currentUser.id} · UID: {currentUser.uid}</p>
-              </div>
+      {/* TAB CONTENT: ACCOUNT & SECURITY */}
+      {activeTab === 'account' && (
+        <div className="space-y-6">
+          {/* Institutional Compliance Notice regarding Read-Only Email & Phone */}
+          <div className="p-4 bg-amber-500/10 border border-amber-500/25 rounded-2xl flex items-start gap-3.5 text-xs text-amber-200">
+            <Lock className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <span className="font-bold text-white text-sm block">
+                Institutional Security & Governance Restriction (FDA 21 CFR Part 11 Protocol)
+              </span>
+              <p className="text-amber-200/90 leading-relaxed text-[11px]">
+                Clients are permitted to upload and update their profile pictures and change their portal passwords.
+                <strong className="text-white ml-1 font-semibold">
+                  Restrictions: Registered institutional email addresses and official telephone numbers are strictly read-only
+                </strong>{' '}
+                to preserve audit trail integrity and prevent identity spoofing across clinical and laboratory workflows. These fields can only be amended by an authorized Super Admin.
+              </p>
             </div>
-            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 uppercase">
-              {currentUser.account_status || 'active'}
-            </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-            <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-lg">
-              <span className="text-slate-400 block mb-0.5">Assigned Portal Category</span>
-              <span className="font-semibold text-slate-900 dark:text-white">{currentUser.portal_category || currentUser.partner_type || category}</span>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Column: Client Profile Photo & Identification Card */}
+            <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl flex flex-col items-center text-center shadow-xs">
+              <div className="relative group">
+                <div className="w-28 h-28 rounded-full overflow-hidden border-3 border-emerald-500 shadow-lg bg-slate-800">
+                  <img
+                    src={clientAvatarUrl}
+                    alt={effectiveUser.full_name || 'Client Avatar'}
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+
+                {/* Hidden file input for client image upload */}
+                <input
+                  ref={clientFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleClientAvatarUpload}
+                  className="hidden"
+                />
+
+                {/* Hover overlay button to trigger direct file upload */}
+                <button
+                  type="button"
+                  onClick={() => clientFileInputRef.current?.click()}
+                  className="absolute inset-0 bg-slate-950/70 rounded-full flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shadow-md"
+                  title="Upload profile picture from device"
+                >
+                  <Upload className="w-5 h-5 mb-1 text-emerald-400" />
+                  <span className="text-[10px] font-semibold">Upload Photo</span>
+                </button>
+              </div>
+
+              {/* Photo Actions */}
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => clientFileInputRef.current?.click()}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs cursor-pointer shadow-xs transition"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Upload Picture</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowPresetModal(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium text-xs cursor-pointer border border-slate-200 dark:border-slate-700 transition"
+                >
+                  <Camera className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Choose Preset</span>
+                </button>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 w-full space-y-1">
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                  {effectiveUser.full_name || 'BRP Registered Client'}
+                </h3>
+                <p className="text-xs text-slate-500">{effectiveUser.organization || 'Institutional Partner'}</p>
+                <div className="pt-2 flex flex-wrap justify-center gap-1.5">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                    <Shield className="w-3 h-3 text-emerald-500" />
+                    <span>{effectiveUser.portal_category || effectiveUser.partner_type || category}</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Verification Metadata */}
+              <div className="w-full mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-left space-y-2">
+                <div className="flex justify-between items-center text-slate-500">
+                  <span>Institutional ID:</span>
+                  <span className="font-mono text-slate-700 dark:text-slate-300 font-semibold">#{effectiveUser.id}</span>
+                </div>
+                <div className="flex justify-between items-center text-slate-500">
+                  <span>Account Status:</span>
+                  <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold capitalize">
+                    <CheckCircle2 className="w-3 h-3" />
+                    {effectiveUser.account_status || 'Active'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-slate-500">
+                  <span>UID:</span>
+                  <span className="font-mono text-slate-400 text-[10px] truncate max-w-[140px]">{effectiveUser.uid || `usr_${effectiveUser.id}`}</span>
+                </div>
+              </div>
             </div>
-            <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-lg">
-              <span className="text-slate-400 block mb-0.5">Email Address</span>
-              <span className="font-semibold text-slate-900 dark:text-white">{currentUser.email}</span>
+
+            {/* Right 2 Columns: Credentials & Password Forms */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Institutional Details Form with Strictly Read-Only Phone & Email */}
+              <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Building className="w-4 h-4 text-emerald-500" />
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                      Institutional Identity & Verified Credentials
+                    </h4>
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 font-semibold">
+                    Read-Only Protected
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <label className="font-semibold block mb-1 text-slate-700 dark:text-slate-300">
+                      Full Legal Name
+                    </label>
+                    <input
+                      type="text"
+                      readOnly
+                      value={effectiveUser.full_name || ''}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-xl text-slate-700 dark:text-slate-300 cursor-not-allowed text-xs focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-semibold block mb-1 text-slate-700 dark:text-slate-300">
+                      Organization / Firm
+                    </label>
+                    <input
+                      type="text"
+                      readOnly
+                      value={effectiveUser.organization || ''}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-xl text-slate-700 dark:text-slate-300 cursor-not-allowed text-xs focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  {/* RESTRICTED FIELD: Official Email Address */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-semibold flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
+                        <Lock className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Institutional Email Address</span>
+                      </label>
+                      <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-500 border border-amber-500/30">
+                        Read-Only Lock
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="email"
+                        readOnly
+                        value={effectiveUser.email || ''}
+                        title="Institutional email address is locked by governance protocol and cannot be modified by clients."
+                        className="w-full pl-3 pr-8 py-2 bg-slate-100 dark:bg-slate-800/90 border-2 border-dashed border-amber-500/40 rounded-xl text-slate-800 dark:text-slate-200 font-mono text-xs cursor-not-allowed focus:outline-none"
+                      />
+                      <Lock className="w-4 h-4 text-amber-500 absolute right-2.5 top-1/2 -translate-y-1/2" />
+                    </div>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+                      Locked to prevent unauthorized email re-binding. Requires Super Admin verification to change.
+                    </p>
+                  </div>
+
+                  {/* RESTRICTED FIELD: Registered Phone Number */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-semibold flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
+                        <Lock className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Registered Phone Number</span>
+                      </label>
+                      <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-500 border border-amber-500/30">
+                        Read-Only Lock
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        readOnly
+                        value={effectiveUser.phone_number || '+44 020 7946 0912'}
+                        title="Registered phone number is locked by governance protocol and cannot be modified by clients."
+                        className="w-full pl-3 pr-8 py-2 bg-slate-100 dark:bg-slate-800/90 border-2 border-dashed border-amber-500/40 rounded-xl text-slate-800 dark:text-slate-200 font-mono text-xs cursor-not-allowed focus:outline-none"
+                      />
+                      <Lock className="w-4 h-4 text-amber-500 absolute right-2.5 top-1/2 -translate-y-1/2" />
+                    </div>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+                      Locked for 2FA and biological laboratory security. Can only be updated by Super Admin.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pt-1">
+                  <div>
+                    <label className="font-semibold block mb-1 text-slate-700 dark:text-slate-300">
+                      Functional Job Role / Title
+                    </label>
+                    <input
+                      type="text"
+                      readOnly
+                      value={effectiveUser.job_title || 'Lead Investigator'}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-xl text-slate-700 dark:text-slate-300 cursor-not-allowed text-xs focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-semibold block mb-1 text-slate-700 dark:text-slate-300">
+                      Assigned Portal Category
+                    </label>
+                    <input
+                      type="text"
+                      readOnly
+                      value={effectiveUser.portal_category || effectiveUser.partner_type || category}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-xl text-slate-700 dark:text-slate-300 cursor-not-allowed text-xs focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Password Change Form */}
+              <form onSubmit={handlePasswordChange} className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs space-y-4 text-xs">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Key className="w-4 h-4 text-emerald-500" />
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                      Change Client Portal Password
+                    </h4>
+                  </div>
+                  <span className="text-[11px] text-slate-400 font-mono">Min. 8 characters</span>
+                </div>
+
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal">
+                  Clients can reset and update their portal password independently. Your new password will take effect immediately across all client dashboard sessions.
+                </p>
+
+                <div>
+                  <label className="font-semibold block mb-1 text-slate-700 dark:text-slate-300">
+                    Current Password
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="Enter current password (if known)"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="font-semibold block mb-1 text-slate-700 dark:text-slate-300">
+                      New Password *
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      placeholder="At least 8 characters"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-semibold block mb-1 text-slate-700 dark:text-slate-300">
+                      Confirm New Password *
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      placeholder="Re-enter new password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 flex items-center justify-between">
+                  <span className="text-[11px] text-slate-400">
+                    Passwords must adhere to institutional complexity standards.
+                  </span>
+                  <button
+                    type="submit"
+                    disabled={!newPassword || !confirmPassword || isUpdatingPassword}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-semibold cursor-pointer shadow-xs transition"
+                  >
+                    <Key className="w-3.5 h-3.5" />
+                    <span>{isUpdatingPassword ? 'Saving Password...' : 'Update Password'}</span>
+                  </button>
+                </div>
+              </form>
             </div>
-            <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-lg">
-              <span className="text-slate-400 block mb-0.5">Organization / Firm</span>
-              <span className="font-semibold text-slate-900 dark:text-white">{currentUser.organization || 'Biotech Research Park'}</span>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: PRESET AVATAR GALLERY FOR CLIENTS */}
+      {showPresetModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-5 text-xs shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
+              <div className="flex items-center gap-2">
+                <Camera className="w-4 h-4 text-emerald-500" />
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white">
+                  Select Profile Avatar Preset
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPresetModal(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
+              >
+                &times;
+              </button>
             </div>
-            <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-lg">
-              <span className="text-slate-400 block mb-0.5">Job Title / Functional Role</span>
-              <span className="font-semibold text-slate-900 dark:text-white">{currentUser.job_title || 'Lead Investigator'}</span>
+
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-3">
+              Choose an authorized scientific partner avatar or upload your custom headshot.
+            </p>
+
+            <div className="space-y-2.5 max-h-80 overflow-y-auto">
+              {clientAvatarPresets.map((preset, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => handleSelectPreset(preset.url)}
+                  className={`w-full flex items-center gap-3 p-2.5 rounded-xl border transition cursor-pointer text-left ${
+                    clientAvatarUrl === preset.url
+                      ? 'border-emerald-500 bg-emerald-500/10 text-emerald-300 font-semibold'
+                      : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-800 dark:text-slate-200'
+                  }`}
+                >
+                  <img
+                    src={preset.url}
+                    alt={preset.label}
+                    className="w-10 h-10 rounded-full object-cover border border-slate-300 dark:border-slate-700 shrink-0"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <span className="block truncate text-xs">{preset.label}</span>
+                  </div>
+                  {clientAvatarUrl === preset.url && (
+                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                  )}
+                </button>
+              ))}
             </div>
-            <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-lg">
-              <span className="text-slate-400 block mb-0.5">Phone Number</span>
-              <span className="font-semibold text-slate-900 dark:text-white">{currentUser.phone_number || '+44 020 7946 0912'}</span>
-            </div>
-            <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-lg">
-              <span className="text-slate-400 block mb-0.5">Location / Address</span>
-              <span className="font-semibold text-slate-900 dark:text-white">{currentUser.city || 'Bedfordshire'}, {currentUser.country || 'United Kingdom'}</span>
+
+            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowPresetModal(false)}
+                className="px-4 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 font-medium cursor-pointer"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>

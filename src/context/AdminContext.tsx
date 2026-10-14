@@ -98,11 +98,13 @@ interface AdminContextType {
   investors: Investor[];
   addInvestor: (investor: Omit<Investor, 'id' | 'createdAt'>) => void;
   updateInvestorStatus: (id: string, status: UserStatus) => void;
+  updateInvestor: (id: string, updates: Partial<Investor>) => void;
   deleteInvestor: (id: string) => void;
 
   partners: Partner[];
   addPartner: (partner: Omit<Partner, 'id' | 'createdAt'>) => void;
   updatePartnerStatus: (id: string, status: UserStatus) => void;
+  updatePartner: (id: string, updates: Partial<Partner>) => void;
   deletePartner: (id: string) => void;
 
   inquiries: Inquiry[];
@@ -175,6 +177,7 @@ interface AdminContextType {
   approveInternalEmployee: (id: string, assignedRole?: InternalRole, assignedDepartment?: string) => Promise<boolean>;
   rejectInternalEmployee: (id: string, reason: string) => Promise<boolean>;
   updateInternalEmployee: (id: string, updates: Partial<InternalEmployee>) => Promise<boolean>;
+  deleteInternalEmployee: (id: string) => Promise<boolean>;
   switchActiveInternalRole: (role: InternalRole) => void;
   logoutInternalEmployee: () => void;
   resetEmployeePassword: (email: string, newPassword: string) => Promise<boolean>;
@@ -682,6 +685,24 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return true;
   };
 
+  const deleteInternalEmployee = async (id: string): Promise<boolean> => {
+    const emp = internalEmployees.find((e) => e.id === id);
+    if (!emp) return false;
+
+    setInternalEmployees((prev) => prev.filter((e) => e.id !== id));
+    addAuditLog(
+      'DELETE_INTERNAL_EMPLOYEE',
+      'Internal Personnel',
+      `Super Admin deleted employee record for ${emp.fullName} (${emp.employeeId || emp.email})`
+    );
+    addToast({
+      type: 'info',
+      title: 'Employee Removed',
+      message: `${emp.fullName} has been removed from the staff registry.`,
+    });
+    return true;
+  };
+
   const switchActiveInternalRole = (role: InternalRole) => {
     setActiveInternalRole(role);
     const matchingSample = internalEmployees.find((e) => e.role === role && e.accountStatus === 'active');
@@ -848,10 +869,24 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const updateAdminProfile = (updated: Partial<AdminUser>) => {
-    if (!currentAdmin) return;
-    const newAdmin = { ...currentAdmin, ...updated };
-    setCurrentAdmin(newAdmin);
-    setAdmins(prev => prev.map(a => a.id === currentAdmin.id ? newAdmin : a));
+    if (currentAdmin) {
+      const newAdmin = { ...currentAdmin, ...updated };
+      setCurrentAdmin(newAdmin);
+      setAdmins(prev => prev.map(a => a.id === currentAdmin.id ? newAdmin : a));
+    }
+    if (currentEmployee) {
+      const newEmp: InternalEmployee = {
+        ...currentEmployee,
+        fullName: updated.fullName ?? currentEmployee.fullName,
+        email: updated.email ?? currentEmployee.email,
+        department: updated.department ?? currentEmployee.department,
+        avatarUrl: updated.avatarUrl ?? currentEmployee.avatarUrl,
+        phoneNumber: updated.phoneNumber ?? currentEmployee.phoneNumber,
+        password: updated.password ?? currentEmployee.password,
+      };
+      setCurrentEmployee(newEmp);
+      setInternalEmployees(prev => prev.map(e => e.id === currentEmployee.id ? newEmp : e));
+    }
     addAuditLog('PROFILE_UPDATE', 'Admin', `Updated personal profile settings`);
     addToast({ type: 'success', title: 'Profile Updated', message: 'Your account changes have been saved.' });
   };
@@ -899,9 +934,16 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     addToast({ type: 'info', title: 'Investor Status Updated' });
   };
 
+  const updateInvestor = (id: string, updates: Partial<Investor>) => {
+    setInvestors(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i));
+    addAuditLog('UPDATE_INVESTOR', 'Investor', `Super Admin updated investor record ID ${id}`, id);
+    addToast({ type: 'success', title: 'Investor Updated', message: 'Investor syndicate details saved.' });
+  };
+
   const deleteInvestor = (id: string) => {
     setInvestors(prev => prev.filter(i => i.id !== id));
-    addToast({ type: 'info', title: 'Investor Deleted' });
+    addAuditLog('DELETE_INVESTOR', 'Investor', `Super Admin deleted investor record ID ${id}`, id);
+    addToast({ type: 'info', title: 'Investor Deleted', message: 'Investor removed from registry.' });
   };
 
   // Partner CRUD
@@ -921,9 +963,16 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     addToast({ type: 'info', title: 'Partner Status Updated' });
   };
 
+  const updatePartner = (id: string, updates: Partial<Partner>) => {
+    setPartners(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+    addAuditLog('UPDATE_PARTNER', 'Partner', `Super Admin updated partner alliance ID ${id}`, id);
+    addToast({ type: 'success', title: 'Partner Updated', message: 'Partner alliance details saved.' });
+  };
+
   const deletePartner = (id: string) => {
     setPartners(prev => prev.filter(p => p.id !== id));
-    addToast({ type: 'info', title: 'Partner Deleted' });
+    addAuditLog('DELETE_PARTNER', 'Partner', `Super Admin deleted partner record ID ${id}`, id);
+    addToast({ type: 'info', title: 'Partner Deleted', message: 'Partner removed from registry.' });
   };
 
   // Inquiries
@@ -1245,11 +1294,13 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         investors,
         addInvestor,
         updateInvestorStatus,
+        updateInvestor,
         deleteInvestor,
 
         partners,
         addPartner,
         updatePartnerStatus,
+        updatePartner,
         deletePartner,
 
         inquiries,
@@ -1318,6 +1369,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         approveInternalEmployee,
         rejectInternalEmployee,
         updateInternalEmployee,
+        deleteInternalEmployee,
         switchActiveInternalRole,
         logoutInternalEmployee,
         resetEmployeePassword,
