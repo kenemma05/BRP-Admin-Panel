@@ -1,19 +1,24 @@
 // Neon PostgreSQL Configuration for BRP-Admin-Panel
 import { neon } from '@neondatabase/serverless';
 
+const configuredUrl =
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_DATABASE_URL?.trim()) ||
+  (typeof process !== 'undefined' && process.env?.DATABASE_URL?.trim()) ||
+  "postgresql://neondb_owner:npg_PqJybnf13pmk@ep-red-pine-zahug5af-pooler.c-2.eu-west-2.aws.neon.tech/neondb?sslmode=require";
+
 export const neonProjectConfig = {
   projectId: "steep-haze-58773380",
   projectName: "biotech-research-park",
   branchId: "br-crimson-math-zajtntw9",
   branchName: "production",
-  databaseUrl: "postgresql://neondb_owner:npg_PqJybnf13pmk@ep-red-pine-zahug5af-pooler.c-2.eu-west-2.aws.neon.tech/neondb?sslmode=require",
+  databaseUrl: configuredUrl,
   authBaseUrl: "https://ep-red-pine-zahug5af.neonauth.c-2.eu-west-2.aws.neon.tech/neondb/auth",
 };
 
 // Safe Neon SQL query client instance
 let sqlInstance: any = null;
 try {
-  if (neonProjectConfig.databaseUrl) {
+  if (neonProjectConfig.databaseUrl && neonProjectConfig.databaseUrl.startsWith('postgres')) {
     sqlInstance = neon(neonProjectConfig.databaseUrl);
   }
 } catch (err) {

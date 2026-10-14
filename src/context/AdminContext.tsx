@@ -26,6 +26,9 @@ import {
   UserCategory,
   InternalEmployee,
   InternalRole,
+  DateRangePreset,
+  DateRangeState,
+  PlatformProject,
 } from '../types';
 import {
   INITIAL_INTERNAL_EMPLOYEES,
@@ -47,6 +50,7 @@ import {
   INITIAL_DOCUMENTS,
   INITIAL_COMPLIANCE,
   INITIAL_AUDIT_LOGS,
+  INITIAL_PROJECTS,
 } from '../lib/initialData';
 
 interface SiteSettings {
@@ -129,6 +133,15 @@ interface AdminContextType {
   documents: DocumentResource[];
   uploadDocument: (doc: Omit<DocumentResource, 'id' | 'uploadedAt' | 'uploadedBy'>) => void;
   deleteDocument: (id: string) => void;
+
+  projects: PlatformProject[];
+  addProject: (project: Omit<PlatformProject, 'id'>) => void;
+  updateProjectProgress: (id: string, progress: number, status?: PlatformProject['status']) => void;
+
+  // Global Timeframe & Date Range
+  dateRange: DateRangeState;
+  setDateRange: (range: DateRangeState) => void;
+  setDateRangePreset: (preset: DateRangePreset) => void;
 
   compliance: ComplianceRecord[];
   updateComplianceStatus: (id: string, status: ComplianceStatus) => void;
@@ -219,6 +232,13 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [equipmentBookings, setEquipmentBookings] = useState<EquipmentBooking[]>(() => getStoredItem('equipment_bookings', INITIAL_EQUIPMENT_BOOKINGS));
   const [opportunities, setOpportunities] = useState<Opportunity[]>(() => getStoredItem('opportunities', INITIAL_OPPORTUNITIES));
   const [documents, setDocuments] = useState<DocumentResource[]>(() => getStoredItem('documents', INITIAL_DOCUMENTS));
+  const [projects, setProjects] = useState<PlatformProject[]>(() => getStoredItem('projects', INITIAL_PROJECTS));
+  const [dateRange, setDateRangeState] = useState<DateRangeState>(() => getStoredItem('date_range', {
+    preset: '30d',
+    startDate: '2026-09-14',
+    endDate: '2026-10-14',
+    label: 'Last 30 Days',
+  }));
   const [compliance, setCompliance] = useState<ComplianceRecord[]>(() => getStoredItem('compliance', INITIAL_COMPLIANCE));
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => getStoredItem('audit_logs', INITIAL_AUDIT_LOGS));
 
@@ -1074,6 +1094,77 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     addToast({ type: 'info', title: 'Document Removed' });
   };
 
+  // Projects
+  const addProject = (projectData: Omit<PlatformProject, 'id'>) => {
+    const newProj: PlatformProject = {
+      ...projectData,
+      id: `prj_${Date.now()}`,
+    };
+    setProjects(prev => [newProj, ...prev]);
+    setStoredItem('projects', [newProj, ...projects]);
+    addAuditLog('CREATE_PROJECT', 'Project', `Registered project "${newProj.name}"`, newProj.id);
+    addToast({ type: 'success', title: 'Project Registered', message: `${newProj.name} added to platform.` });
+  };
+
+  const updateProjectProgress = (id: string, progress: number, status?: PlatformProject['status']) => {
+    setProjects(prev => {
+      const updated = prev.map(p => {
+        if (p.id === id) {
+          return {
+            ...p,
+            progress,
+            status: status || (progress >= 100 ? 'Completed' : p.status),
+          };
+        }
+        return p;
+      });
+      setStoredItem('projects', updated);
+      return updated;
+    });
+    addToast({ type: 'info', title: 'Project Updated', message: `Progress updated to ${progress}%.` });
+  };
+
+  // Date Range
+  const setDateRange = (range: DateRangeState) => {
+    setDateRangeState(range);
+    setStoredItem('date_range', range);
+  };
+
+  const setDateRangePreset = (preset: DateRangePreset) => {
+    const today = '2026-10-14';
+    let range: DateRangeState;
+    switch (preset) {
+      case 'today':
+        range = { preset: 'today', startDate: today, endDate: today, label: 'Today' };
+        break;
+      case '7d':
+        range = { preset: '7d', startDate: '2026-10-07', endDate: today, label: 'Last 7 Days' };
+        break;
+      case '30d':
+        range = { preset: '30d', startDate: '2026-09-14', endDate: today, label: 'Last 30 Days' };
+        break;
+      case 'quarter':
+        range = { preset: 'quarter', startDate: '2026-07-01', endDate: today, label: 'This Quarter (Q3)' };
+        break;
+      case 'ytd':
+        range = { preset: 'ytd', startDate: '2026-01-01', endDate: today, label: 'Year to Date (YTD)' };
+        break;
+      case 'all':
+        range = { preset: 'all', startDate: '2025-01-01', endDate: today, label: 'All Time' };
+        break;
+      case 'custom':
+      default:
+        range = { preset: 'custom', startDate: '2026-09-01', endDate: today, label: 'Custom Range' };
+        break;
+    }
+    setDateRange(range);
+    addToast({
+      type: 'info',
+      title: 'Timeframe Adjusted',
+      message: `Displaying metrics, activity feeds, and telemetry for ${range.label}.`,
+    });
+  };
+
   // Compliance
   const updateComplianceStatus = (id: string, status: ComplianceStatus) => {
     setCompliance(prev => prev.map(c => c.id === id ? { ...c, status } : c));
@@ -1189,6 +1280,14 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         documents,
         uploadDocument,
         deleteDocument,
+
+        projects,
+        addProject,
+        updateProjectProgress,
+
+        dateRange,
+        setDateRange,
+        setDateRangePreset,
 
         compliance,
         updateComplianceStatus,

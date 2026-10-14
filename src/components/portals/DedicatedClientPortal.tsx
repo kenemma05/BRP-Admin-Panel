@@ -62,6 +62,7 @@ import { UserCategory, NeonUser, PortalResource, PortalProjectTask, USER_CATEGOR
 import { CATEGORY_PORTAL_CONFIGS } from './portalConfigs';
 import { NeonAuthService } from '../../services/neonAuthService';
 import { useAdmin } from '../../context/AdminContext';
+import { ClientRoleDashboardRouter } from './dashboards/ClientRoleDashboardRouter';
 
 interface DedicatedClientPortalProps {
   category: UserCategory;
@@ -79,7 +80,7 @@ export const DedicatedClientPortal: React.FC<DedicatedClientPortalProps> = ({
   const config = CATEGORY_PORTAL_CONFIGS[category] || CATEGORY_PORTAL_CONFIGS['Bio-Innovator / Strategic Partner'];
   const { addToast, activeClientUser, isLoggedIn } = useAdmin();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'resources' | 'account'>('overview');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'overview' | 'tasks' | 'resources' | 'account'>('dashboard');
   const [resources, setResources] = useState<PortalResource[]>([]);
   const [tasks, setTasks] = useState<PortalProjectTask[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -126,14 +127,14 @@ export const DedicatedClientPortal: React.FC<DedicatedClientPortalProps> = ({
         addToast({
           type: 'success',
           title: 'Milestone Updated',
-          message: `Status updated to ${newStatus.replace('_', ' ')} in Neon PostgreSQL.`,
+          message: `Status updated to ${newStatus.replace('_', ' ')}.`,
         });
       }
     } catch (e) {
       addToast({
         type: 'error',
         title: 'Update Failed',
-        message: 'Could not sync task update with Neon database.',
+        message: 'Could not sync task update.',
       });
     }
   };
@@ -157,7 +158,7 @@ export const DedicatedClientPortal: React.FC<DedicatedClientPortalProps> = ({
         addToast({
           type: 'success',
           title: 'Project Milestone Logged',
-          message: 'Saved directly to Neon PostgreSQL table.',
+          message: 'Saved directly to project milestones registry.',
         });
         setNewTaskModalOpen(false);
         setNewTaskTitle('');
@@ -203,9 +204,6 @@ export const DedicatedClientPortal: React.FC<DedicatedClientPortalProps> = ({
             <div className="flex flex-wrap items-center gap-2.5">
               <span className={`px-3 py-1 rounded-full text-xs font-semibold tracking-wide border ${config.badgeColor}`}>
                 {config.code} · Portal Experience
-              </span>
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-slate-800/80 text-slate-300 border border-slate-700">
-                Neon DB: Connected (aws-eu-west-2)
               </span>
               {currentUser && (
                 <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
@@ -282,6 +280,17 @@ export const DedicatedClientPortal: React.FC<DedicatedClientPortalProps> = ({
       <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
         <div className="flex space-x-1 sm:space-x-2">
           <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
+              activeTab === 'dashboard'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <TrendingUp className="w-3.5 h-3.5" />
+            Role Dashboard
+          </button>
+          <button
             onClick={() => setActiveTab('overview')}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
               activeTab === 'overview'
@@ -341,15 +350,20 @@ export const DedicatedClientPortal: React.FC<DedicatedClientPortalProps> = ({
               setResources(r);
               setTasks(t);
               setLoading(false);
-              addToast({ type: 'info', title: 'Data Refreshed', message: 'Synchronized with Neon PostgreSQL.' });
+              addToast({ type: 'info', title: 'Data Refreshed', message: 'Portal workspace synchronized.' });
             });
           }}
-          title="Refresh from Neon DB"
-          className="p-1.5 text-slate-400 hover:text-slate-200 rounded-lg hover:bg-slate-800 transition"
+          title="Refresh Data"
+          className="p-1.5 text-slate-400 hover:text-slate-200 rounded-lg hover:bg-slate-800 transition cursor-pointer"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-emerald-400' : ''}`} />
         </button>
       </div>
+
+      {/* TAB CONTENT: ROLE SPECIFIC DASHBOARD */}
+      {activeTab === 'dashboard' && (
+        <ClientRoleDashboardRouter category={category} currentUser={currentUser} />
+      )}
 
       {/* TAB CONTENT: OVERVIEW & ROLE TOOLS */}
       {activeTab === 'overview' && (

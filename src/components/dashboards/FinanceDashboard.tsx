@@ -167,10 +167,10 @@ export const FinanceDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Financial Trends from Neon */}
+        {/* Financial Trends */}
         <div className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm">
           <h3 className="font-bold text-slate-900 dark:text-white text-base mb-1">
-            Revenue Streams by Segment (PostgreSQL Neon Feed)
+            Revenue Streams by Segment
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
             Historical cash receipts across cleanroom facilities, partnerships, and grants.

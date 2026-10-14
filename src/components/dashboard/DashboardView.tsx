@@ -48,6 +48,8 @@ import { useDashboardKPIs } from '../../hooks/useDashboardKPIs';
 import { useNeonStats } from '../../hooks/useNeonStats';
 import { USER_CATEGORIES, UserCategory, InternalRole, InternalRoleConfig } from '../../types';
 import { INTERNAL_ROLES, getRoleConfig } from '../../lib/internalStaffData';
+import { StatusSummaryCard } from './StatusSummaryCard';
+import { RoleInteractiveTrendChart } from './RoleInteractiveTrendChart';
 
 export const DashboardView: React.FC = () => {
   const {
@@ -55,6 +57,7 @@ export const DashboardView: React.FC = () => {
     auditLogs,
     neonUsers,
     refreshNeonUsers,
+    activeClientCategory,
     setActiveClientCategory,
     addToast,
     activeInternalRole,
@@ -260,13 +263,13 @@ export const DashboardView: React.FC = () => {
       setIsRefreshingLive(false);
       addToast({
         type: 'success',
-        title: 'Neon Database Synced',
-        message: 'Real-time counts and revenue trends synchronized from Neon PostgreSQL.',
+        title: 'Dashboard Data Refreshed',
+        message: 'Operational metrics and financial analytics synchronized successfully.',
       });
     }, 400);
   };
 
-  // KPI cards populated using useNeonStats
+  // KPI cards populated using database statistics
   const kpis = [
     {
       title: 'Active Users',
@@ -277,8 +280,7 @@ export const DashboardView: React.FC = () => {
       action: () => setActiveTab('users'),
       accentColor: 'text-emerald-600 dark:text-emerald-400',
       badgeBg: 'bg-emerald-50 dark:bg-emerald-950/60',
-      isLiveNeon: true,
-      meta: 'Neon public.users',
+      meta: 'User registry',
     },
     {
       title: 'Total Inquiries',
@@ -289,8 +291,7 @@ export const DashboardView: React.FC = () => {
       action: () => setActiveTab('inquiries'),
       accentColor: 'text-amber-600 dark:text-amber-400',
       badgeBg: 'bg-amber-50 dark:bg-amber-950/60',
-      isLiveNeon: true,
-      meta: 'Neon inquiries tables',
+      meta: 'Inquiries registry',
     },
     {
       title: 'Recent Facility Bookings',
@@ -301,8 +302,7 @@ export const DashboardView: React.FC = () => {
       action: () => setActiveTab('equipment'),
       accentColor: 'text-cyan-600 dark:text-cyan-400',
       badgeBg: 'bg-cyan-50 dark:bg-cyan-950/60',
-      isLiveNeon: true,
-      meta: 'Neon facility_bookings',
+      meta: 'Facility reservations',
     },
     {
       title: 'Role-Based Client Portals',
@@ -313,7 +313,6 @@ export const DashboardView: React.FC = () => {
       action: () => setActiveTab('portals'),
       accentColor: 'text-purple-600 dark:text-purple-400',
       badgeBg: 'bg-purple-50 dark:bg-purple-950/60',
-      isLiveNeon: true,
       meta: 'Role portal router',
     },
     {
@@ -325,8 +324,7 @@ export const DashboardView: React.FC = () => {
       action: () => setActiveTab('investors'),
       accentColor: 'text-blue-600 dark:text-blue-400',
       badgeBg: 'bg-blue-50 dark:bg-blue-950/60',
-      isLiveNeon: true,
-      meta: 'Neon park_investors',
+      meta: 'Investor registry',
     },
     {
       title: 'Strategic Partners',
@@ -337,8 +335,7 @@ export const DashboardView: React.FC = () => {
       action: () => setActiveTab('partners'),
       accentColor: 'text-teal-600 dark:text-teal-400',
       badgeBg: 'bg-teal-50 dark:bg-teal-950/60',
-      isLiveNeon: true,
-      meta: 'Neon park_partners',
+      meta: 'Partner directory',
     },
   ];
 
@@ -355,49 +352,44 @@ export const DashboardView: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Top Banner: Neon DB Live Integration Telemetry Bar */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-700/80 rounded-2xl p-4 sm:p-5 text-white shadow-md relative overflow-hidden">
+      {/* Top Banner: Executive Enterprise Administration Header */}
+      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-700/80 rounded-2xl p-5 sm:p-6 text-white shadow-md relative overflow-hidden">
         <div className="absolute right-0 top-0 bottom-0 w-96 bg-radial from-emerald-500/10 to-transparent pointer-events-none" />
 
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                Neon PostgreSQL Live
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">
+          <div className="space-y-2 max-w-3xl">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                Enterprise Operations Active
               </span>
-              <span className="text-xs text-slate-400 font-mono">
-                Project: steep-haze-58773380 · Branch: production
+              <span className="text-xs text-slate-400 font-medium">
+                Biotech Research Park &bull; Global Operations
               </span>
-              {neonStatsLastUpdated && (
-                <span className="text-[11px] text-slate-400 font-mono">
-                  Synced: {neonStatsLastUpdated.toLocaleTimeString()}
-                </span>
-              )}
             </div>
-            <h2 className="text-lg sm:text-xl font-bold tracking-tight text-white flex items-center gap-2">
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
               <span>BRP Administrative Dashboard</span>
-              <span className="text-xs font-normal text-emerald-400 font-mono px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-800/60">
-                v2.5 Live
+              <span className="text-xs font-semibold text-emerald-400 font-mono px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-800/60">
+                v2.5 Enterprise
               </span>
             </h2>
-            <p className="text-xs text-slate-300 max-w-2xl">
-              Centralized administrative dashboard with real-time Neon PostgreSQL aggregation for active users, total inquiries, recent facility bookings, and historical revenue trends.
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              Centralized administrative management for facility operations, resident partner directories, research initiatives, and strategic governance.
             </p>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2.5 shrink-0 flex-wrap sm:flex-nowrap">
             <button
               onClick={handleLiveRefresh}
               disabled={isRefreshingLive}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-200 bg-slate-800/90 hover:bg-slate-700 border border-slate-700 rounded-lg transition cursor-pointer disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-slate-200 bg-slate-800/90 hover:bg-slate-700 border border-slate-700 rounded-lg transition cursor-pointer disabled:opacity-50 shadow-2xs"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingLive ? 'animate-spin text-emerald-400' : ''}`} />
-              <span>{isRefreshingLive ? 'Querying Neon...' : 'Refresh Neon Data'}</span>
+              <span>{isRefreshingLive ? 'Refreshing...' : 'Refresh Data'}</span>
             </button>
             <button
               onClick={() => setActiveTab('portals')}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-slate-950 bg-emerald-400 hover:bg-emerald-300 rounded-lg transition shadow-xs cursor-pointer"
+              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-slate-950 bg-emerald-400 hover:bg-emerald-300 rounded-lg transition shadow-xs cursor-pointer"
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>Explore 14 Portals</span>
@@ -407,45 +399,50 @@ export const DashboardView: React.FC = () => {
 
         {/* Internal Role Switch Feature for Administrative Users */}
         {isLoggedIn && !activeClientUser && (
-          <div className="mt-4 pt-3.5 border-t border-slate-700/60 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-900/70 p-3 rounded-xl border border-slate-700/80">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center font-bold text-xs shrink-0">
+          <div className="mt-5 pt-4 border-t border-slate-700/60 flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-slate-900/80 p-3.5 sm:p-4 rounded-xl border border-slate-700/80">
+            <div className="flex items-center gap-3.5">
+              <div className="w-9 h-9 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
                 <Sparkles className="w-4 h-4 text-emerald-400" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-white">
+                  <span className="text-xs font-bold text-white">
                     Role Switch Console
                   </span>
-                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 font-mono">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 font-mono">
                     Super Admin Access
                   </span>
                 </div>
-                <span className="text-[11px] text-slate-400 block">
+                <span className="text-[11px] text-slate-400 block mt-0.5">
                   Switch between Super Admin, Staff, and all 12 Administrative Dashboard perspectives
                 </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
-                <span className="hidden sm:inline">Role Perspective:</span>
+            <div className="flex items-center gap-2.5 shrink-0 flex-wrap sm:flex-nowrap">
+              <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium">
+                <span className="whitespace-nowrap">Role Perspective:</span>
               </div>
-              <select
-                value={activeInternalRole || 'SYSTEM_ADMIN'}
-                onChange={(e) => switchActiveInternalRole(e.target.value as InternalRole)}
-                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-xs font-semibold text-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500 transition"
-                aria-label="Switch dashboard role"
-              >
-                {INTERNAL_ROLES.map((r: InternalRoleConfig) => (
-                  <option key={r.role} value={r.role}>
-                    {r.title} ({r.badge})
-                  </option>
-                ))}
-              </select>
+              <div className="relative min-w-[200px] sm:min-w-[230px]">
+                <select
+                  value={activeInternalRole || 'SYSTEM_ADMIN'}
+                  onChange={(e) => switchActiveInternalRole(e.target.value as InternalRole)}
+                  className="w-full appearance-none pl-3 pr-8 py-2 bg-slate-800 hover:bg-slate-750 border border-slate-600 rounded-lg text-xs font-semibold text-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition shadow-2xs"
+                  aria-label="Switch dashboard role"
+                >
+                  {INTERNAL_ROLES.map((r: InternalRoleConfig) => (
+                    <option key={r.role} value={r.role}>
+                      {r.title} ({r.badge})
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-slate-400">
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </div>
+              </div>
               <button
                 onClick={() => setActiveTab('role_dashboard')}
-                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1 shadow-xs"
+                className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 shadow-xs whitespace-nowrap"
               >
                 <span>Open {getRoleConfig(activeInternalRole || 'SYSTEM_ADMIN').title}</span>
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -453,6 +450,18 @@ export const DashboardView: React.FC = () => {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Role-Specific Status Summary Card & Dynamic Interactive Recharts Trend Chart */}
+      <div className="space-y-4">
+        <StatusSummaryCard
+          category={activeClientCategory}
+          currentUser={activeClientUser}
+          onCategoryChange={(cat) => setActiveClientCategory(cat)}
+        />
+        <RoleInteractiveTrendChart
+          category={activeClientCategory || (activeClientUser?.portal_category as UserCategory) || 'Bio-Innovator / Strategic Partner'}
+        />
       </div>
 
       {/* KPI Cards Grid (populated with useNeonStats real-time counts) */}
@@ -471,12 +480,6 @@ export const DashboardView: React.FC = () => {
                     <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
                       {kpi.title}
                     </p>
-                    {kpi.isLiveNeon && (
-                      <span className="flex h-1.5 w-1.5 relative" title="Live Neon Database Query">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-                      </span>
-                    )}
                   </div>
                   <p className="text-2xl sm:text-3xl font-mono tabular-nums font-bold text-slate-900 dark:text-slate-100 mt-2">
                     {kpi.value}
@@ -501,7 +504,7 @@ export const DashboardView: React.FC = () => {
         })}
       </div>
 
-      {/* FEATURE: Revenue Trends Chart using Recharts & Neon PostgreSQL */}
+      {/* FEATURE: Revenue Trends Chart using Recharts */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 gap-4">
           <div>
@@ -513,11 +516,11 @@ export const DashboardView: React.FC = () => {
                 Biotech Research Park · Revenue Trends
               </h3>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                Neon DB: revenue_trends
+                Audited Financials
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Historical monthly financial data from Neon PostgreSQL visualizing growth across Facility Rentals, Strategic Partnerships, and CDMO Grants.
+              Historical monthly financial data visualizing revenue performance across Cleanroom Facility Rentals, Strategic Partnerships, and CDMO Grants.
             </p>
           </div>
 
@@ -672,7 +675,7 @@ export const DashboardView: React.FC = () => {
           </div>
 
           <span className="text-[11px] font-mono text-slate-400">
-            Source: PostgreSQL table `revenue_trends`
+            Source: Enterprise Financial Records
           </span>
         </div>
 
@@ -896,7 +899,7 @@ export const DashboardView: React.FC = () => {
                   <span>Application Growth & Inquiry Activity</span>
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Synchronized from Neon PostgreSQL public.users and inquiry logs
+                  Aggregate user admissions and stakeholder communication requests
                 </p>
               </div>
 
@@ -1068,11 +1071,11 @@ export const DashboardView: React.FC = () => {
 
           <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
             <span className="flex items-center gap-1.5">
-              <Database className="w-3.5 h-3.5 text-emerald-500" />
-              <span>Direct SQL queries on table public.users</span>
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Authoritative stakeholder registry</span>
             </span>
             <span className="font-mono tabular-nums text-emerald-600 dark:text-emerald-400 font-semibold">
-              ▲ Real-time Neon synchronization
+              Operational Status: Active
             </span>
           </div>
         </div>
@@ -1162,7 +1165,7 @@ export const DashboardView: React.FC = () => {
                     {isSelected && (
                       <div className="mt-2 pt-2 border-t border-emerald-200/50 dark:border-emerald-800/40 flex items-center justify-between text-[11px]">
                         <span className="text-slate-500 font-mono">
-                          {item.users.length} registered in Neon
+                          {item.users.length} registered users
                         </span>
                         <button
                           onClick={(e) => {
@@ -1188,16 +1191,16 @@ export const DashboardView: React.FC = () => {
               onClick={() => setActiveTab('users')}
               className="w-full flex items-center justify-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold hover:underline cursor-pointer"
             >
-              <span>Manage Registered Users in Neon DB</span>
+              <span>Manage Registered Stakeholders</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Bottom Grid: Recent Neon Facility Bookings & Live Audit Feed */}
+      {/* Bottom Grid: Recent Facility Bookings & Live Audit Feed */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* RECENT FACILITY BOOKINGS (from Neon database) */}
+        {/* RECENT FACILITY BOOKINGS */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs">
           <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
             <div>
@@ -1208,7 +1211,7 @@ export const DashboardView: React.FC = () => {
                 </h3>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Real-time reservations in Neon PostgreSQL `facility_bookings` table
+                Real-time reservations across cleanrooms, robotic suites, and analytical laboratories
               </p>
             </div>
             <button

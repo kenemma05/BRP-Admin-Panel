@@ -834,24 +834,24 @@ export const UsersView: React.FC<UsersViewProps> = ({
               {/* Dangerous actions */}
               <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
                 <span className="text-[11px] text-slate-400">Delete user and revoke portal credentials</span>
-                <button
-                  type="button"
-                  disabled={isDeletingNeon}
-                  onClick={async () => {
-                    if (window.confirm(`Are you sure you want to delete ${selectedNeonUser.full_name || selectedNeonUser.email} from the Neon PostgreSQL database?`)) {
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={isDeletingNeon}
+                    onClick={async () => {
                       setIsDeletingNeon(true);
                       const ok = await deleteNeonUser(selectedNeonUser.id);
                       setIsDeletingNeon(false);
                       if (ok) {
                         setSelectedNeonUser(null);
                       }
-                    }
-                  }}
-                  className="px-3 py-1.5 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded text-xs font-semibold flex items-center gap-1 cursor-pointer transition disabled:opacity-50"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>{isDeletingNeon ? 'Deleting...' : 'Delete User'}</span>
-                </button>
+                    }}
+                    className="px-3 py-1.5 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded text-xs font-semibold flex items-center gap-1 cursor-pointer transition disabled:opacity-50"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>{isDeletingNeon ? 'Deleting...' : 'Delete User from Neon'}</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>

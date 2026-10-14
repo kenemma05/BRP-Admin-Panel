@@ -37,6 +37,9 @@ export const PendingApprovalsView: React.FC = () => {
     e.employeeId.toLowerCase().includes(search.toLowerCase())
   );
 
+  const [selectedEmpToReject, setSelectedEmpToReject] = useState<InternalEmployee | null>(null);
+  const [rejectReasonText, setRejectReasonText] = useState('Institutional employment records or credentials could not be verified by BRP Security.');
+
   const handleOpenApproveModal = (emp: InternalEmployee) => {
     setSelectedEmpToApprove(emp);
     setAdjustedRole(emp.role);
@@ -48,14 +51,10 @@ export const PendingApprovalsView: React.FC = () => {
     setSelectedEmpToApprove(null);
   };
 
-  const handleReject = async (emp: InternalEmployee) => {
-    const reason = prompt(
-      `Provide rejection reason for ${emp.fullName}'s registration:`,
-      'Institutional employment records or credentials could not be verified by BRP Security.'
-    );
-    if (reason !== null) {
-      await rejectInternalEmployee(emp.id, reason);
-    }
+  const handleConfirmRejection = async () => {
+    if (!selectedEmpToReject) return;
+    await rejectInternalEmployee(selectedEmpToReject.id, rejectReasonText);
+    setSelectedEmpToReject(null);
   };
 
   return (
@@ -156,7 +155,7 @@ export const PendingApprovalsView: React.FC = () => {
                 {/* Actions */}
                 <div className="flex items-center gap-2.5 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100 dark:border-slate-800">
                   <button
-                    onClick={() => handleReject(emp)}
+                    onClick={() => setSelectedEmpToReject(emp)}
                     className="px-3 py-2 border border-slate-300 dark:border-slate-700 hover:border-rose-400 text-slate-600 dark:text-slate-400 hover:text-rose-500 rounded-xl text-xs font-semibold transition cursor-pointer"
                   >
                     Decline
@@ -250,6 +249,42 @@ export const PendingApprovalsView: React.FC = () => {
               >
                 <Check className="w-4 h-4" />
                 Authorize & Activate Account
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Decline Registration Modal */}
+      {selectedEmpToReject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">
+              Decline Application
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Provide justification for declining {selectedEmpToReject.fullName} ({selectedEmpToReject.department}):
+            </p>
+            <textarea
+              value={rejectReasonText}
+              onChange={(e) => setRejectReasonText(e.target.value)}
+              rows={3}
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+            <div className="flex justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setSelectedEmpToReject(null)}
+                className="px-4 py-2 border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 rounded-xl text-xs font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmRejection}
+                className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition"
+              >
+                Confirm Decline
               </button>
             </div>
           </div>

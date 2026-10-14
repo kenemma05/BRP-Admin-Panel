@@ -65,43 +65,59 @@ export const RoleDashboardRouter: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Role Context & Switcher Bar */}
-      <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-sm shrink-0">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5 transition-all">
+        {/* Left: Role identity, title, ID badge and user department */}
+        <div className="flex items-center gap-4 min-w-0">
+          <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-emerald-500/15 to-teal-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-mono font-bold text-sm tracking-wide shrink-0 shadow-xs">
             {roleConfig.badge}
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">
+          <div className="space-y-1.5 min-w-0">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white truncate">
                 {roleConfig.title} Dashboard
-              </span>
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-mono">
-                {currentEmployee?.employeeId || 'BRP-ACTIVE'}
+              </h1>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                {currentEmployee?.employeeId || 'BRP-ADM-001'}
               </span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              User: <strong className="text-slate-700 dark:text-slate-300">{currentEmployee?.fullName || 'Authorized Staff'}</strong> &bull; {currentEmployee?.department || roleConfig.defaultDepartment}
-            </p>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="text-slate-400 dark:text-slate-500">User:</span>
+                <strong className="text-slate-800 dark:text-slate-200 font-semibold">
+                  {currentEmployee?.fullName || 'Dr. Elena Vance, PhD'}
+                </strong>
+              </span>
+              <span className="text-slate-300 dark:text-slate-700 font-bold">•</span>
+              <span className="text-slate-600 dark:text-slate-400">
+                {currentEmployee?.department || roleConfig.defaultDepartment || 'IT Systems & Infrastructure'}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Quick Role Switcher for immediate testing of all 12 roles */}
-        <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/60 p-2 rounded-xl border border-slate-200 dark:border-slate-700/60">
-          <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium pl-1">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-            <span className="hidden sm:inline">Role Perspective:</span>
+        {/* Right: Role Perspective Switcher with clear spacing & dropdown */}
+        <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 p-2.5 sm:p-3 rounded-xl border border-slate-200/80 dark:border-slate-700/80 shrink-0 self-start lg:self-auto w-full lg:w-auto">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 pl-1 shrink-0">
+            <Sparkles className="w-4 h-4 text-emerald-500 shrink-0" />
+            <span className="whitespace-nowrap">Role Perspective:</span>
           </div>
-          <select
-            value={roleToRender}
-            onChange={(e) => switchActiveInternalRole(e.target.value as InternalRole)}
-            className="px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-800 dark:text-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500"
-          >
-            {INTERNAL_ROLES.map((r: InternalRoleConfig) => (
-              <option key={r.role} value={r.role}>
-                {r.title} ({r.badge})
-              </option>
-            ))}
-          </select>
+          <div className="relative flex-1 lg:min-w-[240px]">
+            <select
+              value={roleToRender}
+              onChange={(e) => switchActiveInternalRole(e.target.value as InternalRole)}
+              className="w-full appearance-none pl-3.5 pr-9 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-900 dark:text-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition shadow-2xs"
+              aria-label="Role Perspective"
+            >
+              {INTERNAL_ROLES.map((r: InternalRoleConfig) => (
+                <option key={r.role} value={r.role}>
+                  {r.title} ({r.badge})
+                </option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-slate-400">
+              <ChevronDown className="w-4 h-4" />
+            </div>
+          </div>
         </div>
       </div>
 

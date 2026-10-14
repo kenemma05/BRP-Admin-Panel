@@ -63,15 +63,17 @@ export const AdminDashboard: React.FC = () => {
     count: internalEmployees.filter(e => e.role === r.role).length,
   }));
 
+  const [rejectingEmp, setRejectingEmp] = useState<{ id: string; name: string } | null>(null);
+  const [rejectReason, setRejectReason] = useState('Identity verification credentials could not be validated.');
+
   const handleApprove = async (id: string, name: string) => {
     await approveInternalEmployee(id);
   };
 
-  const handleReject = async (id: string, name: string) => {
-    const reason = prompt(`Enter reason for declining ${name}'s internal registration:`, 'Identity verification credentials could not be validated.');
-    if (reason !== null) {
-      await rejectInternalEmployee(id, reason);
-    }
+  const handleRejectConfirm = async () => {
+    if (!rejectingEmp) return;
+    await rejectInternalEmployee(rejectingEmp.id, rejectReason);
+    setRejectingEmp(null);
   };
 
   const handleToggleSuspend = async (employee: InternalEmployee) => {
@@ -97,7 +99,7 @@ export const AdminDashboard: React.FC = () => {
             System Administration & Security Console
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            Internal staff registrations, privileged role approvals, Neon PostgreSQL health, and security telemetry.
+            Internal staff registrations, privileged role approvals, platform systems health, and security telemetry.
           </p>
         </div>
 
@@ -160,11 +162,11 @@ export const AdminDashboard: React.FC = () => {
 
         <div className="p-4 sm:p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
-            <span>Neon PostgreSQL Health</span>
+            <span>Core Database Health</span>
             <Database className="w-4 h-4 text-emerald-500" />
           </div>
           <div className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">
-            99.98% Live
+            99.98% Operational
           </div>
           <div className="text-xs text-slate-500 dark:text-slate-400 mt-2">
             Latency: 28ms &bull; SSL Encrypted
@@ -245,7 +247,7 @@ export const AdminDashboard: React.FC = () => {
 
                   <div className="flex items-center gap-2 shrink-0">
                     <button
-                      onClick={() => handleReject(emp.id, emp.fullName)}
+                      onClick={() => setRejectingEmp({ id: emp.id, name: emp.fullName })}
                       className="px-3 py-1.5 border border-slate-300 dark:border-slate-700 hover:border-rose-400 text-slate-600 dark:text-slate-400 hover:text-rose-500 rounded-lg text-xs font-semibold transition cursor-pointer"
                     >
                       Decline
@@ -339,6 +341,42 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Decline Registration Modal */}
+      {rejectingEmp && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6 text-slate-900 dark:text-white">
+            <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">
+              Decline Staff Registration
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+              State the institutional reason for declining {rejectingEmp.name}'s account.
+            </p>
+            <textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              rows={3}
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 mb-4"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setRejectingEmp(null)}
+                className="px-4 py-2 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleRejectConfirm}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold transition"
+              >
+                Confirm Decline
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

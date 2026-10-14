@@ -499,3 +499,194 @@ export interface InternalEmployee {
   password?: string;
 }
 
+// ==========================================
+// 14 Role-Specific Client Portal Dashboard Types
+// ==========================================
+
+export interface PortalRoleKPI {
+  id: number;
+  category: string;
+  kpi_key: string;
+  kpi_label: string;
+  kpi_value: string;
+  kpi_trend?: string;
+  kpi_unit?: string;
+  kpi_description?: string;
+  icon_name?: string;
+  badge_tone?: string;
+  order_idx: number;
+}
+
+export interface PortalRoleChart {
+  id: number;
+  category: string;
+  chart_id: string;
+  title: string;
+  subtitle?: string;
+  chart_type: string;
+  chart_config_json?: any;
+  chart_data_json: any;
+  order_idx: number;
+}
+
+export interface PortalInvestmentRecord {
+  id: number;
+  user_id?: number;
+  user_email?: string;
+  category: string;
+  project_name: string;
+  company_name: string;
+  investment_type: string;
+  amount_invested: number;
+  current_valuation: number;
+  expected_return: number;
+  actual_return: number;
+  roi_percentage: number;
+  investment_date: string;
+  status: string;
+  funding_allocation: string;
+  upcoming_payment_date?: string;
+  payment_amount?: number;
+  agreement_doc_name?: string;
+  quarter_year?: string;
+}
+
+export interface PortalClinicalTrial {
+  id: number;
+  user_id?: number;
+  category: string;
+  protocol_code: string;
+  title: string;
+  phase: string;
+  irb_status: string;
+  target_enrollment: number;
+  current_enrollment: number;
+  adverse_events_count: number;
+  biomarker_endpoint: string;
+  site_name: string;
+  start_date: string;
+  estimated_completion: string;
+  completion_pct: number;
+}
+
+export interface PortalSupplyBatch {
+  id: number;
+  user_id?: number;
+  category: string;
+  batch_lot_number: string;
+  product_name: string;
+  category_type: string;
+  quantity: number;
+  unit: string;
+  qc_status: string;
+  purity_percentage: number;
+  production_date: string;
+  release_date?: string | null;
+  expiry_date: string;
+  storage_condition: string;
+  lead_time_days: number;
+}
+
+export interface PortalResearchGrant {
+  id: number;
+  user_id?: number;
+  category: string;
+  grant_code: string;
+  title: string;
+  funding_agency: string;
+  total_budget: number;
+  spent_budget: number;
+  start_date: string;
+  end_date: string;
+  pi_name: string;
+  status: string;
+  publications_count: number;
+  ethics_clearance: string;
+}
+
+export interface PortalBusinessDeal {
+  id: number;
+  user_id?: number;
+  category: string;
+  deal_name: string;
+  counterparty: string;
+  deal_type: string;
+  deal_stage: string;
+  estimated_value: number;
+  probability_pct: number;
+  projected_close_date: string;
+  term_sheet_status: string;
+  lead_contact: string;
+}
+
+export interface PortalIPLicense {
+  id: number;
+  user_id?: number;
+  category: string;
+  patent_number: string;
+  title: string;
+  filing_type: string;
+  jurisdiction: string;
+  filing_date: string;
+  grant_date?: string | null;
+  licensee_partner?: string;
+  royalty_rate_pct: number;
+  total_royalties_collected: number;
+  status: string;
+  commercialization_stage: string;
+  mta_count: number;
+}
+
+export interface PortalCodevSprint {
+  id: number;
+  user_id?: number;
+  category: string;
+  sprint_name: string;
+  version_tag: string;
+  focus_area: string;
+  total_story_points: number;
+  completed_story_points: number;
+  open_bugs: number;
+  resolved_bugs: number;
+  status: string;
+  release_target_date: string;
+}
+
+export interface PortalConsortiumInitiative {
+  id: number;
+  user_id?: number;
+  category: string;
+  working_group_name: string;
+  initiative_title: string;
+  chair_person: string;
+  standard_doc_status: string;
+  total_ballots_cast: number;
+  quorum_pct: number;
+  meeting_cadence: string;
+  active_benchmark: string;
+}
+
+export type DateRangePreset = 'today' | '7d' | '30d' | 'quarter' | 'ytd' | 'all' | 'custom';
+
+export interface DateRangeState {
+  preset: DateRangePreset;
+  startDate: string;
+  endDate: string;
+  label: string;
+}
+
+export interface PlatformProject {
+  id: string;
+  name: string;
+  category: string;
+  clientOrLead: string;
+  progress: number;
+  status: 'Active' | 'On Track' | 'Under Review' | 'Completed' | 'At Risk';
+  budget?: string;
+  startDate: string;
+  deadline: string;
+  description?: string;
+}
+
+
+
