@@ -13,6 +13,7 @@ import {
   UserCheck,
   ShieldAlert,
   Clock,
+  Globe,
 } from 'lucide-react';
 import { useAdmin } from '../../context/AdminContext';
 import { AdminRole, USER_CATEGORIES, UserCategory, NeonUser, InternalRole, InternalEmployee } from '../../types';
@@ -132,15 +133,23 @@ export const LoginView: React.FC<LoginViewProps> = ({
     }
   };
 
-  const handleQuickStaffSignIn = async (staffEmail: string) => {
+  const handleQuickStaffSignIn = async (staffEmail: string, customPassword?: string) => {
+    const isSuperAdminEmail = [
+      'kenemma05@gmail.com',
+      'emmakenn005@gmail.com',
+      'russellcarlos23@gmail.com',
+      'russellcarlos25@gmail.com',
+      'felixeric813@gmail.com',
+    ].includes(staffEmail.toLowerCase());
+    const pwd = customPassword || (isSuperAdminEmail ? 'Wkadmin@12345' : DEFAULT_INITIAL_PASSWORD);
     setEmail(staffEmail);
-    setPassword(DEFAULT_INITIAL_PASSWORD);
+    setPassword(pwd);
     setErrorMessage(null);
     setPendingApprovalAccount(null);
     setPendingApprovalEmployee(null);
     setLoading(true);
     try {
-      const res = await loginInternalEmployee(staffEmail, DEFAULT_INITIAL_PASSWORD);
+      const res = await loginInternalEmployee(staffEmail, pwd);
       if (!res.success) {
         if (res.isPending && res.employee) {
           setPendingApprovalEmployee(res.employee);
@@ -190,6 +199,17 @@ export const LoginView: React.FC<LoginViewProps> = ({
           <p className="text-xs text-slate-400 mt-1">
             Neon PostgreSQL Unified Access · Role-Based Client Portals & Admin Panel
           </p>
+
+          <div className="mt-3 flex items-center justify-center">
+            <button
+              type="button"
+              onClick={() => setActiveTab('website_publications')}
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 hover:text-white rounded-full text-xs font-semibold shadow-xs transition-all cursor-pointer"
+            >
+              <Globe className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Main Website: Public Publications & Research ↗</span>
+            </button>
+          </div>
         </div>
 
         {/* Tab switcher: Internal Staff & Leadership vs Client Portals vs Admin */}
@@ -466,12 +486,84 @@ export const LoginView: React.FC<LoginViewProps> = ({
           {/* STAFF QUICK PREVIEW: 12 Internal Roles */}
           {authMode === 'STAFF' && (
             <div className="mt-5 pt-4 border-t border-slate-800/80">
+              {/* Provisioned Super Administrators */}
+              <div className="mb-3.5 pb-3 border-b border-slate-800/60">
+                <p className="text-[10px] uppercase tracking-wider font-semibold text-emerald-400 mb-2 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Shield className="w-3.5 h-3.5 text-emerald-400" />
+                    Provisioned Super Administrators (Wkadmin@12345):
+                  </span>
+                  <span className="text-[9px] text-emerald-400/80 font-mono">5 Accounts Active</span>
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleQuickStaffSignIn('russellcarlos25@gmail.com', 'Wkadmin@12345')}
+                    className="p-2 rounded-lg bg-emerald-950/30 hover:bg-emerald-900/40 border border-emerald-500/30 text-left transition cursor-pointer group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-emerald-300 text-[11px] group-hover:text-emerald-200">Russell Carlos</span>
+                      <span className="px-1.5 py-0.2 rounded text-[8px] bg-emerald-500/20 text-emerald-300 font-bold uppercase">Super Admin</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 truncate">russellcarlos25@gmail.com · +447916687573</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleQuickStaffSignIn('kenemma05@gmail.com', 'Wkadmin@12345')}
+                    className="p-2 rounded-lg bg-emerald-950/30 hover:bg-emerald-900/40 border border-emerald-500/30 text-left transition cursor-pointer group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-emerald-300 text-[11px] group-hover:text-emerald-200">Kenneth Emmanuel</span>
+                      <span className="px-1.5 py-0.2 rounded text-[8px] bg-emerald-500/20 text-emerald-300 font-bold uppercase">Super Admin</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 truncate">kenemma05@gmail.com · +447916683855</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleQuickStaffSignIn('emmakenn005@gmail.com', 'Wkadmin@12345')}
+                    className="p-2 rounded-lg bg-emerald-950/30 hover:bg-emerald-900/40 border border-emerald-500/30 text-left transition cursor-pointer group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-emerald-300 text-[11px] group-hover:text-emerald-200">Emmanuel Kenneth</span>
+                      <span className="px-1.5 py-0.2 rounded text-[8px] bg-emerald-500/20 text-emerald-300 font-bold uppercase">Super Admin</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 truncate">emmakenn005@gmail.com · +447916683855</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleQuickStaffSignIn('russellcarlos23@gmail.com', 'Wkadmin@12345')}
+                    className="p-2 rounded-lg bg-emerald-950/30 hover:bg-emerald-900/40 border border-emerald-500/30 text-left transition cursor-pointer group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-emerald-300 text-[11px] group-hover:text-emerald-200">Carlos Russell</span>
+                      <span className="px-1.5 py-0.2 rounded text-[8px] bg-emerald-500/20 text-emerald-300 font-bold uppercase">Super Admin</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 truncate">russellcarlos23@gmail.com · +447916687573</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleQuickStaffSignIn('felixeric813@gmail.com', 'Wkadmin@12345')}
+                    className="p-2 rounded-lg bg-emerald-950/30 hover:bg-emerald-900/40 border border-emerald-500/30 text-left transition cursor-pointer group sm:col-span-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-emerald-300 text-[11px] group-hover:text-emerald-200">Eric Felix</span>
+                      <span className="px-1.5 py-0.2 rounded text-[8px] bg-emerald-500/20 text-emerald-300 font-bold uppercase">Super Admin</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 truncate">felixeric813@gmail.com · +447916687573</div>
+                  </button>
+                </div>
+              </div>
+
               <p className="text-[11px] text-slate-400 font-semibold mb-2 flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                  1-Click Role Perspective (12 Internal Roles):
+                  <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                  Staff Department Perspectives (12 Roles):
                 </span>
-                <span className="text-[10px] text-slate-500 font-normal">Click to sign in instantly</span>
+                <span className="text-[10px] text-slate-500 font-normal">Click to test role</span>
               </p>
               
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">

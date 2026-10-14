@@ -140,7 +140,8 @@ export const Sidebar: React.FC = () => {
       label: 'Content Management',
       icon: FileText,
       submenus: [
-        { id: 'blog', label: 'Blog Posts & Articles' },
+        { id: 'blog', label: 'Publications CMS (Admin)' },
+        { id: 'website_publications', label: 'Website Publications Page ↗' },
         { id: 'events', label: 'Events & Conferences' },
       ],
     },

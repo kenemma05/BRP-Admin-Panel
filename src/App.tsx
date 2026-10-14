@@ -23,6 +23,7 @@ import { RoleDashboardRouter } from './components/dashboards/RoleDashboardRouter
 import { PendingApprovalsView } from './components/users/PendingApprovalsView';
 import { InternalStaffView } from './components/users/InternalStaffView';
 import { ComplianceAuditLogs } from './components/compliance/ComplianceAuditLogs';
+import { MainWebsiteComponentUI } from './components/website/MainWebsiteComponentUI';
 import { UserCategory, NeonUser, USER_CATEGORIES } from './types';
 
 const MainAppLayout: React.FC = () => {
@@ -42,6 +43,16 @@ const MainAppLayout: React.FC = () => {
 
   // If a client user is authenticated or reviewing their dedicated portal:
   const isClientPortalActive = activeTab === 'portals' || Boolean(activeClientUser);
+
+  // If activeTab is 'website_publications', render the Main Website Component UI
+  if (activeTab === 'website_publications') {
+    return (
+      <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col">
+        <MainWebsiteComponentUI />
+        <ToastContainer />
+      </div>
+    );
+  }
 
   // If not logged in as admin AND no client is in portal session, show Login/Register view
   if (!isLoggedIn && !activeClientUser) {
@@ -79,6 +90,16 @@ const MainAppLayout: React.FC = () => {
             setActiveTab('portals');
           }}
         />
+        <ToastContainer />
+      </>
+    );
+  }
+
+  // If viewing the Main Website Component UI (Public Visitor View):
+  if (activeTab === 'website_publications') {
+    return (
+      <>
+        <MainWebsiteComponentUI />
         <ToastContainer />
       </>
     );
@@ -127,6 +148,8 @@ const MainAppLayout: React.FC = () => {
         return <InquiriesView />;
       case 'blog':
         return <BlogView />;
+      case 'website_publications':
+        return <MainWebsiteComponentUI />;
       case 'events':
         return <EventsView />;
       case 'facilities':

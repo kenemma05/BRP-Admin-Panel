@@ -62,6 +62,10 @@ export const UsersView: React.FC<UsersViewProps> = ({
 
   // Neon User Selection & Edit Modal State
   const [selectedNeonUser, setSelectedNeonUser] = useState<NeonUser | null>(null);
+  const [editingNeonFullName, setEditingNeonFullName] = useState<string>('');
+  const [editingNeonPhone, setEditingNeonPhone] = useState<string>('');
+  const [editingNeonOrg, setEditingNeonOrg] = useState<string>('');
+  const [editingNeonJobTitle, setEditingNeonJobTitle] = useState<string>('');
   const [editingNeonCategory, setEditingNeonCategory] = useState<string>('');
   const [editingNeonStatus, setEditingNeonStatus] = useState<string>('');
   const [editingNeonRole, setEditingNeonRole] = useState<string>('');
@@ -352,6 +356,10 @@ export const UsersView: React.FC<UsersViewProps> = ({
               type="button"
               onClick={() => {
                 setSelectedNeonUser(u);
+                setEditingNeonFullName(u.full_name || '');
+                setEditingNeonPhone(u.phone_number || '');
+                setEditingNeonOrg(u.organization || '');
+                setEditingNeonJobTitle(u.job_title || '');
                 setEditingNeonCategory(u.portal_category || u.partner_type || USER_CATEGORIES[0]);
                 setEditingNeonStatus(u.account_status || 'active');
                 setEditingNeonRole(u.role || 'CLIENT');
@@ -705,19 +713,65 @@ export const UsersView: React.FC<UsersViewProps> = ({
 
             {/* Modal Body */}
             <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
-              {/* Institution and Title */}
-              <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-lg">
+              {/* Super Admin Control Notice */}
+              <div className="p-3 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+                <span>
+                  <strong>Super Admin Full Authority:</strong> You can edit and update user credentials, modify locked contact details like phone numbers, reassign portal categories, or delete records.
+                </span>
+              </div>
+
+              {/* Editable Identity: Full Name & Phone Number */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <span className="text-[10px] text-slate-400 uppercase font-mono block">Organization</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">
-                    {selectedNeonUser.organization || 'Biotech Research Park'}
-                  </span>
+                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                    Full Legal Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editingNeonFullName}
+                    onChange={(e) => setEditingNeonFullName(e.target.value)}
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white"
+                  />
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 uppercase font-mono block">Job Title</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">
-                    {selectedNeonUser.job_title || 'Lead Investigator'}
-                  </span>
+                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1 flex items-center justify-between">
+                    <span>Phone Number</span>
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">Admin Editable</span>
+                  </label>
+                  <input
+                    type="tel"
+                    value={editingNeonPhone}
+                    onChange={(e) => setEditingNeonPhone(e.target.value)}
+                    placeholder="+44 7916 683855"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* Institution and Title */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                    Affiliated Organization
+                  </label>
+                  <input
+                    type="text"
+                    value={editingNeonOrg}
+                    onChange={(e) => setEditingNeonOrg(e.target.value)}
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                    Functional Job Title
+                  </label>
+                  <input
+                    type="text"
+                    value={editingNeonJobTitle}
+                    onChange={(e) => setEditingNeonJobTitle(e.target.value)}
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white"
+                  />
                 </div>
               </div>
 
@@ -771,6 +825,7 @@ export const UsersView: React.FC<UsersViewProps> = ({
                     >
                       <option value="CLIENT">Client Partner</option>
                       <option value="ADMIN">Administrator</option>
+                      <option value="SUPER_ADMIN">Super Administrator</option>
                     </select>
                   </div>
                 </div>
@@ -797,6 +852,10 @@ export const UsersView: React.FC<UsersViewProps> = ({
                     onClick={async () => {
                       setIsSavingNeon(true);
                       const ok = await updateNeonUser(selectedNeonUser.id, {
+                        full_name: editingNeonFullName.trim(),
+                        phone_number: editingNeonPhone.trim(),
+                        organization: editingNeonOrg.trim(),
+                        job_title: editingNeonJobTitle.trim(),
                         portal_category: editingNeonCategory,
                         partner_type: editingNeonCategory,
                         account_status: editingNeonStatus,
@@ -810,7 +869,7 @@ export const UsersView: React.FC<UsersViewProps> = ({
                     className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 ml-auto"
                   >
                     <ShieldCheck className="w-3.5 h-3.5" />
-                    <span>{isSavingNeon ? 'Saving...' : 'Save to Neon DB'}</span>
+                    <span>{isSavingNeon ? 'Saving...' : 'Save Changes to Neon DB'}</span>
                   </button>
                 </div>
               </div>

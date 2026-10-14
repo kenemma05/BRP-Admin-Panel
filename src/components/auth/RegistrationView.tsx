@@ -99,6 +99,7 @@ export const RegistrationView: React.FC<RegistrationViewProps> = ({
           jobTitle: jobTitle || 'Research Scientist',
           requestedRole: staffRole,
           password: password || DEFAULT_INITIAL_PASSWORD,
+          phoneNumber: phoneNumber.trim() || undefined,
         });
 
         if (!res.success || !res.employee) {
@@ -424,18 +425,26 @@ export const RegistrationView: React.FC<RegistrationViewProps> = ({
                       </div>
 
                       <div>
-                        <label className="font-semibold text-slate-300 block mb-1">
-                          Requested Internal Role *
+                        <label className="font-semibold text-emerald-400 block mb-1 flex items-center justify-between">
+                          <span>Staff Role Selection *</span>
+                          <span className="text-[10px] text-slate-400 font-normal">Assigned by Personnel Governance</span>
                         </label>
                         <select
                           required
                           value={staffRole}
-                          onChange={(e) => setStaffRole(e.target.value as InternalRole)}
-                          className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                          onChange={(e) => {
+                            const r = e.target.value as InternalRole;
+                            setStaffRole(r);
+                            const cfg = getRoleConfig(r);
+                            if (cfg) {
+                              setStaffDepartment(cfg.department);
+                            }
+                          }}
+                          className="w-full bg-slate-800 border border-emerald-500/50 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
                         >
                           {INTERNAL_ROLES.map((r: InternalRoleConfig) => (
                             <option key={r.role} value={r.role}>
-                              {r.title} ({r.badge})
+                              {r.title} ({r.badge}) &bull; {r.department}
                             </option>
                           ))}
                         </select>
@@ -506,6 +515,23 @@ export const RegistrationView: React.FC<RegistrationViewProps> = ({
                             className="w-full pl-9 pr-3 py-2 bg-slate-800/80 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-xs font-mono"
                           />
                         </div>
+                      </div>
+                    </div>
+
+                    {/* Staff Contact Phone */}
+                    <div>
+                      <label className="font-semibold text-slate-300 block mb-1">
+                        Contact Phone Number <span className="text-slate-500 font-normal">(Staff Mobile / Direct Dial)</span>
+                      </label>
+                      <div className="relative">
+                        <Phone className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="tel"
+                          value={phoneNumber}
+                          onChange={(e) => setPhoneNumber(e.target.value)}
+                          placeholder="+44 7916 683855"
+                          className="w-full pl-9 pr-3 py-2 bg-slate-800/80 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-xs font-mono"
+                        />
                       </div>
                     </div>
                   </>

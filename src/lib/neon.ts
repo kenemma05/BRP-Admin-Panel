@@ -12,6 +12,7 @@ export const neonProjectConfig = {
   branchId: "br-crimson-math-zajtntw9",
   branchName: "production",
   databaseUrl: configuredUrl,
+  apiKey: "napi_lem5qah8bl0k2wy36o8kuc9sndhvf7d3nhccztndx6mocr73i325eo930xrud1rx",
   authBaseUrl: "https://ep-red-pine-zahug5af.neonauth.c-2.eu-west-2.aws.neon.tech/neondb/auth",
 };
 
